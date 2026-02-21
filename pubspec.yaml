@@ -17,3 +17,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/fonts/
+
+  fonts:
+  - family: AlbertSans
+    fonts:
+      - asset: assets/fonts/AlbertSans-Regular.ttf
+
+  - family: YoungSerif
+    fonts:
+      - asset: assets/fonts/YoungSerif-Regular.ttf

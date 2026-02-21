@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/views/login.dart';
 
 class QizMe extends StatefulWidget {
   const QizMe({super.key});
@@ -45,7 +46,20 @@ class _QizMeState extends State<QizMe> {
         const Center(child: Text('Home Page')),
         const Center(child: Text('Add Card Set Page')),
         const Center(child: Text('Library Page')),
-        const Center(child: Text('Menu Page')),
+        Center(
+          child: OutlinedButton(
+            child: Text(
+              'Logout',
+              style: TextStyle(fontSize: 18.0, color: Colors.black),
+            ),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const Login()),
+              );
+            },
+          ),
+        ),
       ][currentPageIndex],
     );
   }
