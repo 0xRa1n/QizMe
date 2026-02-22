@@ -1,6 +1,20 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+class ApiException implements Exception {
+  final String message;
+  final int statusCode;
+
+  ApiException(this.message, this.statusCode);
+
+  @override
+  String toString() {
+    return jsonEncode({
+      'error': {'message': message, 'statusCode': statusCode},
+    });
+  }
+}
+
 class ApiService {
   // Define your base URL constant to avoid repeating it across functions
   static const String _baseUrl = 'http://127.0.0.1:8000';
@@ -22,9 +36,14 @@ class ApiService {
       final response = await http.get(url, headers: _getHeaders());
 
       return _processResponse(response);
+    } on ApiException {
+      // Re-throw the ApiException so it can be caught by the UI layer
+      rethrow;
     } catch (e) {
-      // Catch network-level exceptions (e.g., no internet connection)
-      throw Exception('Network Error: $e');
+      // Catch other exceptions (like SocketException for no network) and wrap them
+      throw Exception(
+        'Network Error: Please check your connection and try again.',
+      );
     }
   }
 
@@ -43,25 +62,35 @@ class ApiService {
       );
 
       return _processResponse(response);
+    } on ApiException {
+      // Re-throw the ApiException so it can be caught by the UI layer
+      rethrow;
     } catch (e) {
-      throw Exception('Network Error: $e');
+      // Catch other exceptions (like SocketException for no network) and wrap them
+      throw Exception(
+        'Network Error: Please check your connection and try again.',
+      );
     }
   }
 
   // Centralized response processor to evaluate the HTTP status code
   static dynamic _processResponse(http.Response response) {
     final int statusCode = response.statusCode;
+    final responseBody = jsonDecode(response.body);
 
     // Evaluate the piecewise function logic here
     if (statusCode >= 200 && statusCode < 300) {
       // D_json: Successfully parse the JSON payload
       return response.body;
     } else if (statusCode >= 400 && statusCode < 500) {
-      // E_client: Handle client-side errors (e.g., 401 Unauthorized, 404 Not Found)
-      throw Exception('Client Error $statusCode: ${response.body}');
+      // E_client: Handle client-side errors by throwing our custom exception
+      final errorMessage =
+          responseBody['error']['message'] ??
+          'An unknown client error occurred.';
+      throw ApiException(errorMessage, statusCode);
     } else {
-      // E_server: Handle server-side errors (e.g., 500 Internal Server Error)
-      throw Exception('Server Error $statusCode');
+      // E_server: Handle server-side errors
+      throw ApiException('Server Error', statusCode);
     }
   }
 }
