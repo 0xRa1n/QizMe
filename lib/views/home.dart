@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/views/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QizMe extends StatefulWidget {
   const QizMe({super.key});
@@ -11,14 +12,50 @@ class QizMe extends StatefulWidget {
 class _QizMeState extends State<QizMe> {
   int currentPageIndex = 0;
 
+  // 1. Declare a nullable SharedPreferences variable and a loading flag
+  SharedPreferencesWithCache? _prefs;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // 2. Trigger the initialization process
+    _initializePreferences();
+  }
+
+  // 3. Handle the asynchronous work outside the build method
+  Future<void> _initializePreferences() async {
+    final prefs = await SharedPreferencesWithCache.create(
+      cacheOptions: const SharedPreferencesWithCacheOptions(
+        allowList: <String>{'email', 'name', 'pushNotifications', 'appTheme'},
+      ),
+    );
+
+    // Update the state to rebuild the UI cleanly
+    setState(() {
+      _prefs = prefs;
+      _isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // 4. Handle the loading state at the root level of the build method
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
+        ),
+      );
+    }
+
+    // 5. Return the flat, readable Scaffold once loading is complete
     return Scaffold(
       appBar: AppBar(
         foregroundColor: Colors.white,
-        title: Text("Search bar 2"),
+        title: const Text("Search bar 2"),
         centerTitle: true,
-        backgroundColor: Color.fromRGBO(21, 23, 25, 100),
+        backgroundColor: const Color.fromRGBO(21, 23, 25, 100),
       ),
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (int index) {
@@ -43,12 +80,13 @@ class _QizMeState extends State<QizMe> {
         ],
       ),
       body: <Widget>[
-        const Center(child: Text('Home Page')),
+        // Here you can now easily read from _prefs synchronously
+        Center(child: Text('Welcome ${_prefs?.getString('name') ?? "None"}')),
         const Center(child: Text('Add Card Set Page')),
         const Center(child: Text('Library Page')),
         Center(
           child: OutlinedButton(
-            child: Text(
+            child: const Text(
               'Logout',
               style: TextStyle(fontSize: 18.0, color: Colors.black),
             ),
