@@ -13,7 +13,7 @@ class _QizMeState extends State<QizMe> {
   int currentPageIndex = 0;
 
   // 1. Declare a nullable SharedPreferences variable and a loading flag
-  SharedPreferencesWithCache? _prefs;
+  SharedPreferences? _prefs;
   bool _isLoading = true;
 
   @override
@@ -25,11 +25,8 @@ class _QizMeState extends State<QizMe> {
 
   // 3. Handle the asynchronous work outside the build method
   Future<void> _initializePreferences() async {
-    final prefs = await SharedPreferencesWithCache.create(
-      cacheOptions: const SharedPreferencesWithCacheOptions(
-        allowList: <String>{'email', 'name', 'pushNotifications', 'appTheme'},
-      ),
-    );
+    // Use the standard SharedPreferences instance
+    final prefs = await SharedPreferences.getInstance();
 
     // Update the state to rebuild the UI cleanly
     setState(() {

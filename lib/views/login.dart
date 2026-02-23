@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/utils/http.dart';
 import 'package:flutter_application_1/views/home.dart';
 import 'package:flutter_application_1/utils/functions.dart';
+import 'package:flutter_application_1/views/account/forgotPassword.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -68,17 +69,16 @@ class _LoginState extends State<Login> {
       // parse the data from the endpoint
       final jsonMap = jsonDecode(responseBody);
 
-      final userData = jsonMap['data']['data'];
+      final userData = jsonMap['data'];
       final userPrefs = userData['userPreference'];
 
       // set the static values to the current session
-      await _prefs?.setString("email", _emailController.text);
-      await _prefs?.setString("name", userData['name']);
-      await _prefs?.setBool(
-        "pushNotifications",
-        userPrefs['pushNotifications'],
-      );
-      await _prefs?.setString("appTheme", userPrefs['appTheme']);
+      await Future.wait([
+        _prefs!.setString("email", _emailController.text),
+        _prefs!.setString("name", userData['name']),
+        _prefs!.setBool("pushNotifications", userPrefs['pushNotifications']),
+        _prefs!.setString("appTheme", userPrefs['appTheme']),
+      ]);
 
       if (!mounted) return; // checks if the current widget still exists
 
@@ -226,7 +226,12 @@ class _LoginState extends State<Login> {
                       width: 350,
                       child: InkWell(
                         onTap: () {
-                          // TODO: Implement forgot password functionality
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPassword(),
+                            ),
+                          );
                         },
                         child: const Text(
                           "Forgot password",
