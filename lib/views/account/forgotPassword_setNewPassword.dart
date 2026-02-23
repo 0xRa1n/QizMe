@@ -1,30 +1,30 @@
 // ignore: file_names
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:pinput/pinput.dart';
 
 import 'package:flutter_application_1/utils/http.dart';
 import 'package:flutter_application_1/utils/functions.dart';
-import 'package:flutter_application_1/views/account/forgotPassword_setNewPassword.dart';
+import 'package:flutter_application_1/views/account/forgotPassword_verifyCode.dart';
+import 'package:flutter_application_1/views/home.dart';
 
-// ignore: camel_case_types
-class ForgotPassword_VerifyCode extends StatefulWidget {
-  const ForgotPassword_VerifyCode({super.key});
+class ForgotPasswordSetNewPassword extends StatefulWidget {
+  final String token;
+
+  const ForgotPasswordSetNewPassword({super.key, required this.token});
 
   @override
-  State<ForgotPassword_VerifyCode> createState() =>
-      _ForgotPasswordVerifyCodeState();
+  State<ForgotPasswordSetNewPassword> createState() =>
+      _ForgotPasswordSetNewPasswordState();
 }
 
-class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
+class _ForgotPasswordSetNewPasswordState
+    extends State<ForgotPasswordSetNewPassword> {
   final _formKey = GlobalKey<FormState>();
-  final _codeController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _newPasswordReEnterController = TextEditingController();
 
   bool _isLoading = true;
   bool _isResettingPassword = false;
-  int code = 0;
 
   @override
   void initState() {
@@ -34,6 +34,7 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
 
   @override
   void dispose() {
+    _newPasswordController.dispose();
     super.dispose();
   }
 
@@ -62,25 +63,25 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
     try {
       // make an http request
       final responseBody = await ApiService.postRequest(
-        "api/users/verifyCode",
-        {"code": code},
+        "api/users/resetPassword",
+        {
+          "token": widget.token,
+          "newPassword": _newPasswordReEnterController.text,
+        },
       );
 
       final jsonMap = jsonDecode(responseBody);
+      final apiResponse = jsonMap['success'];
 
       if (!mounted) return;
-
-      // to-do: make a custom dialog that shows if the code is invalid, or the submission is invalid
-
-      final token = jsonMap['message']['token'];
-
       // replace this to a next page
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ForgotPasswordSetNewPassword(token: token),
-        ),
-      );
+      if (apiResponse) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const QizMe()),
+          (Route<dynamic> route) => false,
+        );
+      }
     } on ApiException catch (apiError) {
       if (mounted) {
         final String errorMessage = apiError.message;
@@ -160,7 +161,7 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
                 const Center(
                   child: Text(
@@ -173,27 +174,67 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
 
                 SizedBox(
                   width: 350,
-                  child: Builder(
-                    builder: (context) => Padding(
-                      padding: const EdgeInsets.all(40.0),
-                      child: Center(
-                        child: Center(
-                          child: Pinput(
-                            length: 4,
-                            controller: _codeController,
-                            onCompleted: (inputCode) =>
-                                code = int.parse(inputCode),
-                          ),
+                  child: TextFormField(
+                    controller: _newPasswordController,
+                    cursorColor: Colors.black,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Color(0xFF5D8A56),
+                          width: 1.0,
                         ),
                       ),
+                      floatingLabelStyle: TextStyle(color: Color(0xFF5D8A56)),
+                      border: OutlineInputBorder(),
+                      labelText: 'New password',
+                      labelStyle: TextStyle(fontSize: 18.0),
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your password';
+                      }
+                      return null; // Return null if valid
+                    },
                   ),
                 ),
 
                 const SizedBox(height: 24),
 
                 SizedBox(
-                  width: 180,
+                  width: 350,
+                  child: TextFormField(
+                    obscureText: true,
+                    controller: _newPasswordReEnterController,
+                    cursorColor: Colors.black,
+                    decoration: const InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Color(0xFF5D8A56),
+                          width: 1.0,
+                        ),
+                      ),
+                      floatingLabelStyle: TextStyle(color: Color(0xFF5D8A56)),
+                      border: OutlineInputBorder(),
+                      labelText: 'Re-Enter new password',
+                      labelStyle: TextStyle(fontSize: 18.0),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please re-enter your password';
+                      }
+                      if (value != _newPasswordController.text) {
+                        return 'Passwords do not match'; // The validation message
+                      }
+                      return null; // Return null if valid
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: 210,
                   height: 40,
                   child: _isResettingPassword
                       ? const Center(
@@ -214,7 +255,7 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
                             overlayColor: const Color(0xFF5D8A56),
                           ),
                           child: const Text(
-                            'Verify code',
+                            'Set new password',
                             style: TextStyle(
                               fontSize: 18.0,
                               color: Colors.black,

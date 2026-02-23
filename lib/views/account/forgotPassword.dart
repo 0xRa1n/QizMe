@@ -1,3 +1,4 @@
+// ignore: file_names
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
@@ -66,7 +67,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       if (!mounted) return;
       // replace this to a next page
       if (apiResponse) {
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => const ForgotPassword_VerifyCode(),
@@ -215,7 +216,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                             overlayColor: const Color(0xFF5D8A56),
                           ),
                           child: const Text(
-                            'Verify code',
+                            'Send code',
                             style: TextStyle(
                               fontSize: 18.0,
                               color: Colors.black,
