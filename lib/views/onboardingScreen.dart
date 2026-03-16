@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/views/login.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:qizme/views/login.dart';
 
 class Onboardingscreen extends StatefulWidget {
   const Onboardingscreen({super.key});

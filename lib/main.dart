@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/views/login.dart';
+import 'package:qizme/views/login.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter_application_1/views/onboardingScreen.dart';
+import 'package:qizme/views/onboardingScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {

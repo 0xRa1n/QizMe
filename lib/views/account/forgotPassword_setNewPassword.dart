@@ -2,9 +2,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
-import 'package:flutter_application_1/utils/http.dart';
-import 'package:flutter_application_1/utils/functions.dart';
-import 'package:flutter_application_1/views/home/home.dart';
+import 'package:qizme/utils/http.dart';
+import 'package:qizme/utils/functions.dart';
+import 'package:qizme/views/home/home.dart';
 
 class ForgotPasswordSetNewPassword extends StatefulWidget {
   final String token;
