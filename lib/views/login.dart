@@ -110,7 +110,7 @@ class _LoginState extends State<Login> {
       }
     } finally {
       if (mounted) {
-        // will be executed everytime, this terminates the loading icon (see line 106)
+        // will be executed everytime, this terminates the loading icon
         setState(() {
           _isLoggingIn = false;
         });

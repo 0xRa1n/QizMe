@@ -71,14 +71,14 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                           const Text(
                             "Create Flashcards",
                             style: TextStyle(
-                              fontSize: 32,
+                              fontSize: 36,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 6),
                           const Text(
                             "Put your memory to the ultimate test.",
-                            style: TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 16),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -125,7 +125,7 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                           AutoSizeText(
                             'Check Your Knowledge',
                             style: TextStyle(
-                              fontSize: 29,
+                              fontSize: 36,
                               fontWeight: FontWeight.bold,
                             ),
                             minFontSize: 10,
@@ -136,7 +136,7 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                           const SizedBox(height: 6),
                           const Text(
                             "Put your brains to the test, check your knowledge and discover what you already know.",
-                            style: TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 16),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -183,14 +183,14 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                           const Text(
                             "View Your Progress",
                             style: TextStyle(
-                              fontSize: 32,
+                              fontSize: 36,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 6),
                           const Text(
                             "When a card is created, you can track your progress inside the application.",
-                            style: TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 16),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -290,6 +290,7 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                       ),
                     ),
                   ),
+                  SizedBox(height: 12),
                   TextButton(
                     onPressed: () => controller.jumpToPage(2),
                     child: const Text(
