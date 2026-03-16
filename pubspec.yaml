@@ -1,17 +1,19 @@
 name: flutter_application_1
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0+1
 
 environment:
   sdk: ^3.11.0
 
 dependencies:
+  auto_size_text: ^3.0.0
   flutter:
     sdk: flutter
   http: ^1.6.0
   pinput: ^6.0.2
   shared_preferences: ^2.5.4
+  smooth_page_indicator: ^2.0.1
 
 dev_dependencies:
   flutter_test:
@@ -22,12 +24,13 @@ flutter:
   uses-material-design: true
   assets:
     - assets/fonts/
+    - assets/images/
 
   fonts:
-  - family: AlbertSans
-    fonts:
-      - asset: assets/fonts/AlbertSans-Regular.ttf
+    - family: AlbertSans
+      fonts:
+        - asset: assets/fonts/AlbertSans-Regular.ttf
 
-  - family: YoungSerif
-    fonts:
-      - asset: assets/fonts/YoungSerif-Regular.ttf
+    - family: YoungSerif
+      fonts:
+        - asset: assets/fonts/YoungSerif-Regular.ttf

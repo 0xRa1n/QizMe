@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/utils/http.dart';
-import 'package:flutter_application_1/views/home.dart';
+import 'package:flutter_application_1/views/home/home.dart';
 import 'package:flutter_application_1/utils/functions.dart';
 import 'package:flutter_application_1/views/account/forgotPassword.dart';
 

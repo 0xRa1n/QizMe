@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_application_1/utils/http.dart';
 import 'package:flutter_application_1/utils/functions.dart';
-import 'package:flutter_application_1/views/account/forgotPassword_verifyCode.dart';
-import 'package:flutter_application_1/views/home.dart';
+import 'package:flutter_application_1/views/home/home.dart';
 
 class ForgotPasswordSetNewPassword extends StatefulWidget {
   final String token;

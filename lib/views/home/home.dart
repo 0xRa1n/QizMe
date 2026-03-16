@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/views/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class QizMe extends StatefulWidget {
@@ -37,6 +36,7 @@ class _QizMeState extends State<QizMe> {
 
   @override
   Widget build(BuildContext context) {
+    String userName = _prefs?.getString('name') ?? "None";
     // 4. Handle the loading state at the root level of the build method
     if (_isLoading) {
       return const Scaffold(
@@ -77,22 +77,59 @@ class _QizMeState extends State<QizMe> {
         ],
       ),
       body: <Widget>[
-        // Here you can now easily read from _prefs synchronously
-        Center(child: Text('Welcome ${_prefs?.getString('name') ?? "None"}')),
-        const Center(child: Text('Add Card Set Page')),
-        const Center(child: Text('Library Page')),
+        // this is automatically sorted, no need to do anything
+        // just follow the order of the pages, and it will be displayed in the correct order
+        // make sure to use column or row
+        Center(child: Text('Welcome $userName')), // first page
+        const Center(child: Text('Add Card Set Page')), // second page
+        const Center(child: Text('Library Page')), // third page
         Center(
-          child: OutlinedButton(
-            child: const Text(
-              'Logout',
-              style: TextStyle(fontSize: 18.0, color: Colors.black),
-            ),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const Login()),
-              );
-            },
+          // fourth page
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundImage: AssetImage('assets/images/user.png'),
+              ),
+              SizedBox(height: 16),
+
+              Text('Hello $userName'),
+
+              SizedBox(height: 16),
+
+              Padding(
+                padding: const EdgeInsetsGeometry.symmetric(horizontal: 20.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      alignment:
+                          Alignment.centerLeft, // Aligns text to the left
+                      padding: const EdgeInsets.all(
+                        16.0,
+                      ), // Padding inside the button
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          12,
+                        ), // Rounded corners
+                      ),
+                      backgroundColor: Colors
+                          .grey[200], // Optional: Light grey background like image
+                    ),
+                    child: const Text(
+                      "Account",
+                      style: TextStyle(
+                        color: Colors.black, // Dark text
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ][currentPageIndex],
