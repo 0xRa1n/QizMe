@@ -122,16 +122,15 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                                       0.48, // 38% of screen height for larger screens, this helps maintain a good visual balance across different device sizes
                             fit: BoxFit.contain,
                           ),
-                          AutoSizeText(
-                            'Check Your Knowledge',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
+                          SizedBox(
+                            child: AutoSizeText(
+                              "Check Your Knowledge",
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
                             ),
-                            minFontSize: 10,
-                            maxLines: 2,
-                            overflow: TextOverflow
-                                .ellipsis, // Optional: adds ... if still too big
                           ),
                           const SizedBox(height: 6),
                           const Text(

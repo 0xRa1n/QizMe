@@ -81,6 +81,10 @@ class _SignupAdditionalState extends State<SignupAdditional> {
           MaterialPageRoute(builder: (context) => const QizMe()),
           (route) => false,
         );
+
+        // remove email and password from shared preferences for security reasons
+        await _prefs?.remove('email');
+        await _prefs?.remove('password');
       }
     } on ApiException catch (apiError) {
       if (mounted) {
