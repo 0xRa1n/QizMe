@@ -84,54 +84,8 @@ class _QizMeState extends State<QizMe> {
         const Center(child: Text('Add Card Set Page')), // second page
         const Center(child: Text('Library Page')), // third page
         Center(
-          // fourth page
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: AssetImage('assets/images/user.png'),
-              ),
-              SizedBox(height: 16),
-
-              Text('Hello $userName'),
-
-              SizedBox(height: 16),
-
-              Padding(
-                padding: const EdgeInsetsGeometry.symmetric(horizontal: 20.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      alignment:
-                          Alignment.centerLeft, // Aligns text to the left
-                      padding: const EdgeInsets.all(
-                        16.0,
-                      ), // Padding inside the button
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          12,
-                        ), // Rounded corners
-                      ),
-                      backgroundColor: Colors
-                          .grey[200], // Optional: Light grey background like image
-                    ),
-                    child: const Text(
-                      "Account",
-                      style: TextStyle(
-                        color: Colors.black, // Dark text
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+          child: Text("replace me"),
+        ), // replace this code to start working on the fourth page, which is menu
       ][currentPageIndex],
     );
   }

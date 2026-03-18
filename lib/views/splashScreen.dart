@@ -25,46 +25,44 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-
-  SharedPreferences? _prefs;
-
-  Future<void> _initializePreferences() async {
-    // Use the standard SharedPreferences instance
-    final prefs = await SharedPreferences.getInstance();
-
-    // Update the state to rebuild the UI cleanly
-    setState(() {
-      _prefs = prefs;
-    });
-  }
+  bool _seenOnboarding = false;
 
   @override
   void initState() {
     super.initState();
-    _initializePreferences();
-
-    bool seenOnboarding = _prefs?.getBool('seenOnboarding') ?? false;
-    print(seenOnboarding);
 
     // this sets the duration of the animation to 2.5 seconds, reducing this will make the splash screen animation faster
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
     );
+    // this function makes sures that after the animation is completed, the user is navigated to the appropriate screen based on whether they have seen the onboarding or not (important for also checking for the boolean seenOnboarding in shared preferences)
+    //
+    _initializeScreens();
+  }
 
-    // this checks if the animation is completed and navigates to the login screen
+  Future<void> _initializeScreens() async {
+    final prefs = await SharedPreferences.getInstance();
+    // get the boolean value of seenOnboarding from shared preferences, if it doesn't exist, default to false
+    _seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+
+    if (!mounted)
+      return; // safety check to ensure the widget is still in the widget tree before trying to navigate
+
     _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
+      if (status == AnimationStatus.completed && mounted) {
+        // if the animation is completed and the widget is still in the widget tree, navigate to the appropriate screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) =>
-                seenOnboarding ? const Login() : const Onboardingscreen(),
+            builder: (_) => _seenOnboarding
+                ? const Login()
+                : const Onboardingscreen(), // if the seenOnboarding boolean is true, navigate to the login screen, otherwise navigate to the onboarding screen
           ),
         );
       }
     });
 
-    _controller.forward();
+    _controller.forward(); // starts the animation
   }
 
   @override

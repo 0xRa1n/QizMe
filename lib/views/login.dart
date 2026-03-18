@@ -251,7 +251,14 @@ class _LoginState extends State<Login> {
                               ),
                             )
                           : OutlinedButton(
-                              onPressed: _login,
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const QizMe(),
+                                  ),
+                                );
+                              },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.black,
                                 side: const BorderSide(
