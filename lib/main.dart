@@ -1,22 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/views/login.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter_application_1/views/onboardingScreen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/views/splashScreen.dart';
 
 void main() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool seenOnboarding =
-      prefs.getBool('seenOnboarding') ??
-      false; // we need to pass the variable of whether the onboarding screen has been seen before to the MyApp widget so that it can decide which screen to show first
-  // by default, it is set to false, meaning that the onboarding screen has not been seen before
-  runApp(MyApp(seenOnboarding: seenOnboarding));
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // get if the onboarding screen has been seen before
-  final bool seenOnboarding;
-  const MyApp({super.key, this.seenOnboarding = false});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +22,7 @@ class MyApp extends StatelessWidget {
           // For TextFormFields, you might need to style inputDecorationTheme
         ),
       ),
-      home: seenOnboarding ? const Login() : const Onboardingscreen(),
+      home: SplashScreen(),
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {
