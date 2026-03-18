@@ -1,28 +1,26 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:qizme/views/account/signUp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/home/home.dart';
 import 'package:qizme/utils/functions.dart';
-import 'package:qizme/views/account/forgotPassword.dart';
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+class SignupAdditional extends StatefulWidget {
+  const SignupAdditional({super.key});
 
   @override
-  State<Login> createState() => _LoginState();
+  State<SignupAdditional> createState() => _SignupAdditionalState();
 }
 
-class _LoginState extends State<Login> {
+class _SignupAdditionalState extends State<SignupAdditional> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _nameController = TextEditingController();
 
   SharedPreferences? _prefs;
-  bool _isLoading = true;
-  bool _isLoggingIn = false;
+  final bool _isLoading = false;
+  bool _isSigningUp = false;
 
   @override
   void initState() {
@@ -32,8 +30,8 @@ class _LoginState extends State<Login> {
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _usernameController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -45,11 +43,11 @@ class _LoginState extends State<Login> {
     if (!mounted) return;
 
     setState(() {
-      _isLoading = false;
+      _isSigningUp = false;
     });
   }
 
-  Future<void> _login() async {
+  Future<void> _signup() async {
     // a function for readabilitiy
     if (!_formKey.currentState!.validate()) {
       // returns if the email or password is invalid
@@ -57,37 +55,33 @@ class _LoginState extends State<Login> {
     }
 
     setState(() {
-      _isLoggingIn = true; // sets the initial counter for the loading
+      _isSigningUp = true; // sets the initial counter for the loading
     });
 
     try {
+      // get the email and password from shared preferences
+      final String? email = _prefs?.getString('email');
+      final String? password = _prefs?.getString('password');
       // make an http request
-      final responseBody = await ApiService.postRequest("api/users/login", {
-        "email": _emailController.text,
-        "password": _passwordController.text,
+      final responseBody = await ApiService.postRequest("api/users/register", {
+        "name": _nameController.text,
+        "username": _usernameController.text,
+        "email": email,
+        "password": password,
       });
 
       // parse the data from the endpoint
       final jsonMap = jsonDecode(responseBody);
+      if (jsonMap['success'] == true) {
+        if (!mounted) return; // checks if the current widget still exists
 
-      final userData = jsonMap['data'];
-      final userPrefs = userData['userPreference'];
-
-      // set the static values to the current session
-      await Future.wait([
-        _prefs!.setString("email", _emailController.text),
-        _prefs!.setString("name", userData['name']),
-        _prefs!.setBool("pushNotifications", userPrefs['pushNotifications']),
-        _prefs!.setString("appTheme", userPrefs['appTheme']),
-      ]);
-
-      if (!mounted) return; // checks if the current widget still exists
-
-      // direct the user to the home page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const QizMe()),
-      );
+        // direct the user to the home page
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const QizMe()),
+          (route) => false,
+        );
+      }
     } on ApiException catch (apiError) {
       if (mounted) {
         final String errorMessage = apiError.message;
@@ -97,7 +91,7 @@ class _LoginState extends State<Login> {
         if (statusCode == 400) {
           showCustomDialog(
             context: context,
-            title: 'Login Failed',
+            title: 'Signup Failed',
             content: errorMessage,
           );
         }
@@ -106,14 +100,14 @@ class _LoginState extends State<Login> {
       if (mounted) {
         // making sure that the app will display the error on where it happened
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Failed: ${exception.toString()}')),
+          SnackBar(content: Text('Signup Failed: ${exception.toString()}')),
         );
       }
     } finally {
       if (mounted) {
         // will be executed everytime, this terminates the loading icon
         setState(() {
-          _isLoggingIn = false;
+          _isSigningUp = false;
         });
       }
     }
@@ -166,93 +160,82 @@ class _LoginState extends State<Login> {
                     const SizedBox(height: 20),
                     SizedBox(
                       width: 350,
-                      child: TextFormField(
-                        controller: _emailController,
-                        cursorColor: Colors.black,
-                        decoration: const InputDecoration(
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Color(0xFF5D8A56),
-                              width: 1.0,
-                            ),
-                          ),
-                          floatingLabelStyle: TextStyle(
-                            color: Color(0xFF5D8A56),
-                          ),
-                          border: OutlineInputBorder(),
-                          labelText: 'Email',
-                          labelStyle: TextStyle(fontSize: 18.0),
-                        ),
-                        validator: (value) {
-                          if (value == null ||
-                              value.isEmpty ||
-                              !value.contains('@')) {
-                            return 'Please enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: 350,
-                      child: TextFormField(
-                        controller: _passwordController,
-                        cursorColor: Colors.black,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Color(0xFF5D8A56),
-                              width: 1.0,
-                            ),
-                          ),
-                          floatingLabelStyle: TextStyle(
-                            color: Color(0xFF5D8A56),
-                          ),
-                          border: OutlineInputBorder(),
-                          labelText: 'Password',
-                          labelStyle: TextStyle(fontSize: 18.0),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: 350,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ForgotPassword(),
-                            ),
-                          );
-                        },
+                      child: Align(
+                        alignment: Alignment.centerLeft,
                         child: const Text(
-                          "Forgot password",
-                          textAlign: TextAlign.right,
-                          style: TextStyle(fontSize: 14),
+                          "We need more information",
+                          style: TextStyle(fontSize: 24.0),
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: 350,
+                      child: TextFormField(
+                        controller: _usernameController,
+                        cursorColor: Colors.black,
+                        decoration: const InputDecoration(
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Color(0xFF5D8A56),
+                              width: 1.0,
+                            ),
+                          ),
+                          floatingLabelStyle: TextStyle(
+                            color: Color(0xFF5D8A56),
+                          ),
+                          border: OutlineInputBorder(),
+                          labelText: 'Name',
+                          labelStyle: TextStyle(fontSize: 18.0),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your name';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: 350,
+                      child: TextFormField(
+                        controller: _nameController,
+                        cursorColor: Colors.black,
+                        decoration: const InputDecoration(
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Color(0xFF5D8A56),
+                              width: 1.0,
+                            ),
+                          ),
+                          floatingLabelStyle: TextStyle(
+                            color: Color(0xFF5D8A56),
+                          ),
+                          border: OutlineInputBorder(),
+                          labelText: 'Username',
+                          labelStyle: TextStyle(fontSize: 18.0),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a username';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
                       width: 180,
                       height: 40,
-                      child: _isLoggingIn
+                      child: _isSigningUp
                           ? const Center(
                               child: CircularProgressIndicator(
                                 color: Color(0xFF5D8A56),
                               ),
                             )
                           : OutlinedButton(
-                              onPressed: _login,
+                              onPressed: _signup,
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.black,
                                 side: const BorderSide(
@@ -264,38 +247,13 @@ class _LoginState extends State<Login> {
                                 overlayColor: const Color(0xFF5D8A56),
                               ),
                               child: const Text(
-                                'Login',
+                                'Sign up',
                                 style: TextStyle(
                                   fontSize: 18.0,
                                   color: Colors.black,
                                 ),
                               ),
                             ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: 350,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text("Don't have an account?"),
-                          InkWell(
-                            onTap: () {
-                              // TODO: Navigate to Sign Up page
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const Signup(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              child: const Text("Sign up"),
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),

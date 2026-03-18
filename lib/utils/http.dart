@@ -17,7 +17,7 @@ class ApiException implements Exception {
 
 class ApiService {
   // Define your base URL constant to avoid repeating it across functions
-  static const String _baseUrl = 'http://127.0.0.1:8000';
+  static const String _baseUrl = 'http://143.198.209.74:8000';
 
   // Helper method to construct standard headers
   static Map<String, String> _getHeaders() {
