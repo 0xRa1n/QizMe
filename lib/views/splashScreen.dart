@@ -38,7 +38,9 @@ class _SplashScreenState extends State<SplashScreen>
     );
     // this function makes sures that after the animation is completed, the user is navigated to the appropriate screen based on whether they have seen the onboarding or not (important for also checking for the boolean seenOnboarding in shared preferences)
     //
-    _initializeScreens();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeScreens();
+    });
   }
 
   Future<void> _initializeScreens() async {
@@ -46,8 +48,9 @@ class _SplashScreenState extends State<SplashScreen>
     // get the boolean value of seenOnboarding from shared preferences, if it doesn't exist, default to false
     _seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
 
-    if (!mounted)
-      return; // safety check to ensure the widget is still in the widget tree before trying to navigate
+    if (!mounted) {
+      return;
+    } // safety check to ensure the widget is still in the widget tree before trying to navigate
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
