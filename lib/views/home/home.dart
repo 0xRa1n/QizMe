@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qizme/views/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qizme/views/home/widgets/home_widgets.dart';
 
@@ -33,8 +34,6 @@ class _QizMeState extends State<QizMe> {
   }
 
   Widget _buildHomePage() {
-    // final name = _prefs?.getString('name') ?? 'None';
-
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -61,6 +60,8 @@ class _QizMeState extends State<QizMe> {
 
   @override
   Widget build(BuildContext context) {
+    final name = _prefs?.getString('name') ?? 'None';
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(
@@ -73,7 +74,114 @@ class _QizMeState extends State<QizMe> {
       _buildHomePage(),
       const Center(child: Text('Add Card Set Page')),
       const Center(child: Text('Library Page')),
-      const Center(child: Text('Menu Page')),
+      Center(
+        // fourth page
+        child: Container(
+          margin: EdgeInsets.only(top: 65),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircleAvatar(
+                radius: 50,
+                backgroundImage: AssetImage('assets/images/user.png'),
+              ),
+              const SizedBox(height: 16),
+              Text('Hello $name'),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.all(16.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.grey[200],
+                    ),
+                    child: const Text(
+                      "Account",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.all(16.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.grey[200],
+                    ),
+                    child: const Text(
+                      "Settings",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      if (!mounted) return;
+
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => Login()),
+                        (route) => false, // Removes all previous routes
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.all(16.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.red[200],
+                    ),
+                    child: const Text(
+                      "Logout",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
     ];
 
     return Scaffold(
