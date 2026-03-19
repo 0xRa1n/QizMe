@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qizme/views/home/widgets/home_widgets.dart';
 
 class QizMe extends StatefulWidget {
   const QizMe({super.key});
@@ -10,34 +11,56 @@ class QizMe extends StatefulWidget {
 
 class _QizMeState extends State<QizMe> {
   int currentPageIndex = 0;
-
-  // 1. Declare a nullable SharedPreferences variable and a loading flag
   SharedPreferences? _prefs;
   bool _isLoading = true;
+
+  static const double iconSize = 31;
 
   @override
   void initState() {
     super.initState();
-    // 2. Trigger the initialization process
     _initializePreferences();
   }
 
-  // 3. Handle the asynchronous work outside the build method
   Future<void> _initializePreferences() async {
-    // Use the standard SharedPreferences instance
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
 
-    // Update the state to rebuild the UI cleanly
     setState(() {
       _prefs = prefs;
       _isLoading = false;
     });
   }
 
+  Widget _buildHomePage() {
+    // final name = _prefs?.getString('name') ?? 'None';
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 25),
+            buildStreakCard(),
+            const SizedBox(height: 25),
+            buildCalendarSection(),
+            const SizedBox(height: 35),
+            const Text(
+              'Mastery Dashboard',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 15),
+            buildCreateSubjectCard(),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    String userName = _prefs?.getString('name') ?? "None";
-    // 4. Handle the loading state at the root level of the build method
     if (_isLoading) {
       return const Scaffold(
         body: Center(
@@ -46,47 +69,69 @@ class _QizMeState extends State<QizMe> {
       );
     }
 
-    // 5. Return the flat, readable Scaffold once loading is complete
+    final pages = <Widget>[
+      _buildHomePage(),
+      const Center(child: Text('Add Card Set Page')),
+      const Center(child: Text('Library Page')),
+      const Center(child: Text('Menu Page')),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         foregroundColor: Colors.white,
-        title: const Text("Search bar 2"),
+        title: buildSearchBar(),
         centerTitle: true,
-        backgroundColor: const Color.fromRGBO(21, 23, 25, 100),
+        backgroundColor: const Color.fromARGB(255, 217, 217, 217),
       ),
       bottomNavigationBar: NavigationBar(
+        height: 80,
         onDestinationSelected: (int index) {
           setState(() {
             currentPageIndex = index;
           });
         },
-        indicatorColor: const Color.fromARGB(255, 238, 191, 191),
+        indicatorColor: Color.fromARGB(125, 102, 143, 96),
         selectedIndex: currentPageIndex,
-        destinations: const <Widget>[
+        destinations: <Widget>[
           NavigationDestination(
-            selectedIcon: Icon(Icons.home),
-            icon: Icon(Icons.home_outlined),
+            selectedIcon: IconTheme(
+              data: IconThemeData(size: iconSize),
+              child: Icon(Icons.home),
+            ),
+            icon: IconTheme(
+              data: IconThemeData(size: iconSize),
+              child: Icon(Icons.home_outlined),
+            ),
             label: 'Home',
           ),
-          NavigationDestination(icon: Icon(Icons.add), label: 'Add card set'),
           NavigationDestination(
-            icon: Icon(Icons.library_books),
+            icon: IconTheme(
+              data: IconThemeData(size: iconSize),
+              child: Icon(Icons.add),
+            ),
+            label: 'Add card set',
+          ),
+          NavigationDestination(
+            selectedIcon: IconTheme(
+              data: IconThemeData(size: iconSize),
+              child: Icon(Icons.library_books),
+            ),
+            icon: IconTheme(
+              data: IconThemeData(size: iconSize),
+              child: Icon(Icons.library_books_outlined),
+            ),
             label: 'Library',
           ),
-          NavigationDestination(icon: Icon(Icons.menu), label: 'Menu'),
+          NavigationDestination(
+            icon: IconTheme(
+              data: IconThemeData(size: iconSize),
+              child: Icon(Icons.menu),
+            ),
+            label: 'Menu',
+          ),
         ],
       ),
-      body: <Widget>[
-        // this is automatically sorted, no need to do anything
-        // just follow the order of the pages, and it will be displayed in the correct order
-        // make sure to use column or row
-        Center(child: Text('Welcome $userName')), // first page
-        const Center(child: Text('Add Card Set Page')), // second page
-        const Center(child: Text('Library Page')), // third page
-        Center(
-          child: Text("replace me"),
-        ), // replace this code to start working on the fourth page, which is menu
-      ][currentPageIndex],
+      body: pages[currentPageIndex],
     );
   }
 }

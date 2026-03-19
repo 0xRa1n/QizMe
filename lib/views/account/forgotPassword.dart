@@ -162,12 +162,6 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   ),
                 ),
 
-                const Center(
-                  child: Text(
-                    "We have sent you a 4-digit code to reset your password.",
-                  ),
-                ),
-
                 const SizedBox(height: 12),
 
                 SizedBox(

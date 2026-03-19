@@ -159,7 +159,7 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
                 const Center(
                   child: Text(
@@ -168,7 +168,12 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const Center(
+                  child: Text(
+                    "We have sent you a 4-digit code to reset your password.",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
 
                 SizedBox(
                   width: 350,
@@ -188,8 +193,6 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 24),
 
                 SizedBox(
                   width: 180,
