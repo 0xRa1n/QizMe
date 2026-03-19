@@ -189,7 +189,7 @@ class _QizMeState extends State<QizMe> {
         foregroundColor: Colors.white,
         title: buildSearchBar(),
         centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 217, 217, 217),
+        backgroundColor: Color.fromARGB(155, 5, 113, 75),
       ),
       bottomNavigationBar: NavigationBar(
         height: 80,
@@ -198,7 +198,7 @@ class _QizMeState extends State<QizMe> {
             currentPageIndex = index;
           });
         },
-        indicatorColor: Color.fromARGB(125, 102, 143, 96),
+        indicatorColor: Colors.green[200],
         selectedIndex: currentPageIndex,
         destinations: <Widget>[
           NavigationDestination(

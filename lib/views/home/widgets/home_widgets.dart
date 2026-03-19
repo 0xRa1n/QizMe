@@ -53,7 +53,7 @@ Widget buildCalendarGrid() {
       return Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isToday ? Colors.red : Colors.transparent,
+          color: isToday ? Color(0xFF2D6A4F) : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
           border: isToday ? Border.all(color: Colors.black) : null,
         ),
