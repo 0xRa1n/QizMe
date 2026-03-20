@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
-import 'onboardingScreen.dart';
+import 'onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class QizMeApp extends StatelessWidget {

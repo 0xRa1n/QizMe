@@ -8,9 +8,11 @@ environment:
 
 dependencies:
   auto_size_text: ^3.0.0
+  file_picker: ^10.3.10
   flutter:
     sdk: flutter
   http: ^1.6.0
+  image_picker: ^1.2.1
   pinput: ^6.0.2
   rename_app: ^1.6.5
   shared_preferences: ^2.5.4

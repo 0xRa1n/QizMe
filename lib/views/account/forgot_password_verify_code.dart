@@ -6,7 +6,7 @@ import 'package:pinput/pinput.dart';
 
 import 'package:qizme/utils/http.dart';
 import 'package:qizme/utils/functions.dart';
-import 'package:qizme/views/account/forgotPassword_setNewPassword.dart';
+import 'package:qizme/views/account/forgot_password_set_new_password.dart';
 
 // ignore: camel_case_types
 class ForgotPassword_VerifyCode extends StatefulWidget {

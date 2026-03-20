@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qizme/views/account/signupAdditional.dart';
+import 'package:qizme/views/account/signup_additional.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Signup extends StatefulWidget {

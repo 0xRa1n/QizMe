@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:qizme/views/splashScreen.dart';
+import 'package:qizme/views/splash_screen.dart';
 
 void main() async {
   runApp(MyApp());

@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:qizme/views/account/signUp.dart';
+import 'package:qizme/views/account/signup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/home/home.dart';
 import 'package:qizme/utils/functions.dart';
-import 'package:qizme/views/account/forgotPassword.dart';
+import 'package:qizme/views/account/forgot_password.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -79,6 +79,7 @@ class _LoginState extends State<Login> {
         _prefs!.setString("name", userData['name']),
         _prefs!.setBool("pushNotifications", userPrefs['pushNotifications']),
         _prefs!.setString("appTheme", userPrefs['appTheme']),
+        _prefs!.setString("profilePicture", userData['profilePicture'] ?? ""),
       ]);
 
       if (!mounted) return; // checks if the current widget still exists

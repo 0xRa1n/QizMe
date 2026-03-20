@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:qizme/utils/http.dart';
 import 'package:qizme/utils/functions.dart';
-import 'package:qizme/views/account/forgotPassword_verifyCode.dart';
+import 'package:qizme/views/account/forgot_password_verify_code.dart';
 
 class ForgotPassword extends StatefulWidget {
   const ForgotPassword({super.key});

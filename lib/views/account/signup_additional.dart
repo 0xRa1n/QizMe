@@ -75,6 +75,21 @@ class _SignupAdditionalState extends State<SignupAdditional> {
       if (jsonMap['success'] == true) {
         if (!mounted) return; // checks if the current widget still exists
 
+        final data = jsonMap['data'];
+        await _prefs!.setString('name', data['name'] ?? _nameController.text);
+        await _prefs!.setString('email', data['email'] ?? email ?? '');
+        await _prefs!.setString(
+          'username',
+          data['username'] ?? _usernameController.text,
+        );
+        await _prefs!.setString(
+          'profilePicture'
+          '',
+          data['profilePicture'] ?? '',
+        );
+
+        if (!mounted) return;
+
         // direct the user to the home page
         Navigator.pushAndRemoveUntil(
           context,

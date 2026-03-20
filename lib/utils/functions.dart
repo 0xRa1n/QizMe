@@ -41,3 +41,8 @@ Future<void> showCustomDialog({
     },
   );
 }
+
+Future<void> uploadImage({
+  required BuildContext context,
+  required Function(String) onImageSelected,
+}) async {}
