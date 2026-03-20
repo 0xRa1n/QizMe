@@ -3,8 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qizme/views/home/widgets/home_widgets.dart';
 import 'package:qizme/views/home/widgets/menu_widgets.dart';
 import 'package:qizme/views/home/tabs/edit_account.dart';
-import 'package:qizme/utils/http.dart';
-import 'package:qizme/constants.dart';
 
 class QizMe extends StatefulWidget {
   const QizMe({super.key});
@@ -34,6 +32,14 @@ class _QizMeState extends State<QizMe> {
     setState(() {
       _prefs = prefs;
       _isLoading = false;
+    });
+  }
+
+  Future<void> _refreshUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _prefs = prefs;
     });
   }
 
@@ -67,27 +73,56 @@ class _QizMeState extends State<QizMe> {
     required String name,
     required String profilePicture,
   }) {
+    String resolvedUrl = profilePicture;
+
+    if (resolvedUrl.contains('localhost')) {
+      resolvedUrl = resolvedUrl.replaceFirst(
+        'http://localhost:8000',
+        'http://10.0.2.2:8000',
+      );
+    }
+    final cacheBustedUrl =
+        '$resolvedUrl?ts=${DateTime.now().millisecondsSinceEpoch}';
+
+    final ImageProvider avatarProvider = profilePicture.isNotEmpty
+        ? NetworkImage(resolvedUrl)
+        : const AssetImage('assets/images/user.png');
+
     return Container(
       margin: const EdgeInsets.only(top: 65),
       child: Column(
         children: [
           Column(
             children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: NetworkImage(profilePicture),
+              SizedBox(
+                height: 100,
+                width: 100,
+                child: ClipOval(
+                  child: profilePicture.isNotEmpty
+                      ? Image.network(
+                          cacheBustedUrl,
+                          key: ValueKey(cacheBustedUrl), // force refresh
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            'assets/images/user.png',
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.asset(
+                          'assets/images/user.png',
+                          fit: BoxFit.cover,
+                        ),
+                ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
             ],
           ),
-
-          Center(
-            child: Row(
-              children: [
-                Text("Hello, "),
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("Hello, "),
+              Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
           ),
           const SizedBox(height: 16),
           buildMenuButtons(
@@ -130,6 +165,9 @@ class _QizMeState extends State<QizMe> {
                   _showEditAccount = false;
                 });
               },
+              onProfileUpdated: () async {
+                await _refreshUserData();
+              },
             )
           : _buildMenuOption(
               context: context,
@@ -139,7 +177,6 @@ class _QizMeState extends State<QizMe> {
     ];
 
     return Scaffold(
-      // hide search AppBar when in Edit Account (to match figma top section)
       appBar: AppBar(
         foregroundColor: Colors.white,
         backgroundColor: const Color.fromARGB(155, 5, 113, 75),
@@ -170,7 +207,6 @@ class _QizMeState extends State<QizMe> {
         onDestinationSelected: (int index) {
           setState(() {
             currentPageIndex = index;
-            // reset edit state if user leaves menu tab
             if (index != 3) _showEditAccount = false;
           });
         },

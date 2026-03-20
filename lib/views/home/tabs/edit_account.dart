@@ -7,38 +7,76 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class EditAccountPage extends StatefulWidget {
   final VoidCallback onBack;
-  const EditAccountPage({super.key, required this.onBack});
+  final Future<void> Function() onProfileUpdated;
+
+  const EditAccountPage({
+    super.key,
+    required this.onBack,
+    required this.onProfileUpdated,
+  });
 
   @override
   State<EditAccountPage> createState() => _EditAccountPageState();
 }
 
 class _EditAccountPageState extends State<EditAccountPage> {
-  XFile? _selectedImage; // Store the selected image file
+  XFile? _selectedImage;
   final ImagePicker _picker = ImagePicker();
+  SharedPreferences? _prefs;
+  String? _profilePictureUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPrefs();
+  }
+
+  Future<void> _initPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _prefs = prefs;
+      _profilePictureUrl = prefs.getString('profilePicture');
+    });
+  }
 
   Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile == null) return;
-    final _prefs = await SharedPreferences.getInstance();
+    try {
+      final pickedFile = await _picker.pickImage(source: source);
+      if (pickedFile == null) return;
 
-    setState(() {
-      _selectedImage = pickedFile;
-    });
+      setState(() {
+        _selectedImage = pickedFile;
+      });
 
-    final response = await ApiService.postFileRequest(
-      'api/users/profile/updatePicture',
-      {'email': 'unvlzx.c@gmail.com'},
-      pickedFile.path,
-    );
+      final response = await ApiService.postFileRequest(
+        'api/users/profile/updatePicture',
+        {'email': 'unvlzx.c@gmail.com'},
+        pickedFile.path,
+      );
 
-    final jsonMap = jsonDecode(response);
-    final jsonData = jsonMap['data'] ?? {};
-    // save new profile picture URL to shared preferences
-    await _prefs.setString('profilePicture', jsonData['filePath']);
+      final jsonMap = jsonDecode(response);
+      final newPath = jsonMap['data']?['imageUrl'];
 
-    if (!mounted) return;
-    Navigator.pop(context); // close bottom sheet
+      if (newPath == null || newPath.toString().isEmpty) {
+        throw Exception('Server returned empty image path');
+      }
+
+      await _prefs!.setString('profilePicture', newPath.toString());
+      await widget.onProfileUpdated();
+
+      if (!mounted) return;
+      Navigator.pop(context); // close sheet
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile picture updated')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+    }
   }
 
   void _showImagePickerSheet() {
@@ -66,9 +104,15 @@ class _EditAccountPageState extends State<EditAccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ImageProvider avatarProvider = _selectedImage != null
-        ? FileImage(File(_selectedImage!.path))
-        : const AssetImage("assets/images/user.png");
+    ImageProvider avatarProvider;
+
+    if (_selectedImage != null) {
+      avatarProvider = FileImage(File(_selectedImage!.path));
+    } else if (_profilePictureUrl != null && _profilePictureUrl!.isNotEmpty) {
+      avatarProvider = NetworkImage(_profilePictureUrl!);
+    } else {
+      avatarProvider = const AssetImage("assets/images/user.png");
+    }
 
     return Padding(
       padding: const EdgeInsets.all(16),

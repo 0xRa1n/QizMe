@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:qizme/constants.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -18,7 +19,6 @@ class ApiException implements Exception {
 
 class ApiService {
   // Define your base URL constant to avoid repeating it across functions
-  static const String _baseUrl = 'http://143.198.209.74:8000';
   // endpoint: 143.198.209.74
   // 10.0.2.2 for android
   // localhost for pc
@@ -34,7 +34,7 @@ class ApiService {
 
   // Generic GET request function
   static Future<dynamic> getRequest(String endpoint) async {
-    final url = Uri.parse('$_baseUrl/$endpoint');
+    final url = Uri.parse('$baseUrl/$endpoint');
 
     try {
       final response = await http.get(url, headers: _getHeaders());
@@ -56,7 +56,7 @@ class ApiService {
     String endpoint,
     Map<String, dynamic> body,
   ) async {
-    final url = Uri.parse('$_baseUrl/$endpoint');
+    final url = Uri.parse('$baseUrl/$endpoint');
 
     try {
       final response = await http.post(
@@ -83,7 +83,7 @@ class ApiService {
     Map<String, String> fields,
     String filePath,
   ) async {
-    final url = Uri.parse('$_baseUrl/$endpoint');
+    final url = Uri.parse('$baseUrl/$endpoint');
     print('POST FILE URL: $url');
     print('FILE PATH: $filePath');
     print('FIELDS: $fields');
