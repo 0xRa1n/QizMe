@@ -89,13 +89,13 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    if (_controller.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
-        ),
-      );
-    }
+    // if (_controller.isLoading) {
+    //   return const Scaffold(
+    //     body: Center(
+    //       child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
+    //     ),
+    //   );
+    // }
 
     return Scaffold(
       body: Stack(

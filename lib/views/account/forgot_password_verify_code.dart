@@ -1,29 +1,26 @@
-// ignore: file_names
-
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
-
-import 'package:qizme/utils/http.dart';
+import 'package:qizme/repositories/auth_repository.dart';
 import 'package:qizme/utils/functions.dart';
+import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/account/forgot_password_set_new_password.dart';
 
-// ignore: camel_case_types
-class ForgotPassword_VerifyCode extends StatefulWidget {
-  const ForgotPassword_VerifyCode({super.key});
+class ForgotPasswordVerifyCode extends StatefulWidget {
+  const ForgotPasswordVerifyCode({super.key});
 
   @override
-  State<ForgotPassword_VerifyCode> createState() =>
+  State<ForgotPasswordVerifyCode> createState() =>
       _ForgotPasswordVerifyCodeState();
 }
 
-class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
+class _ForgotPasswordVerifyCodeState extends State<ForgotPasswordVerifyCode> {
   final _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
+  final _authRepository = AuthRepository();
 
   bool _isLoading = true;
   bool _isResettingPassword = false;
-  int code = 0;
+  int? _code;
 
   @override
   void initState() {
@@ -33,13 +30,12 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
 
   @override
   void dispose() {
+    _codeController.dispose();
     super.dispose();
   }
 
   Future<void> _initializePreferences() async {
-    // Using standard SharedPreferences for this refactor.
-    // Replace with SharedPreferencesWithCache if that's your intended package.
-
+    await _authRepository.initializePreferences();
     if (!mounted) return;
 
     setState(() {
@@ -47,33 +43,17 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
     });
   }
 
-  Future<void> _resetPassword() async {
-    // a function for readabilitiy
-    if (!_formKey.currentState!.validate()) {
-      // returns if the email or password is invalid
-      return;
-    }
+  Future<void> _verifyCode() async {
+    if (!_formKey.currentState!.validate() || _code == null) return;
 
     setState(() {
-      _isResettingPassword = true; // sets the initial counter for the loading
+      _isResettingPassword = true;
     });
 
     try {
-      // make an http request
-      final responseBody = await ApiService.postRequest(
-        "api/users/verifyCode",
-        {"code": code},
-      );
-
-      final jsonMap = jsonDecode(responseBody);
-
+      final token = await _authRepository.verifyPasswordResetCode(code: _code!);
       if (!mounted) return;
 
-      // to-do: make a custom dialog that shows if the code is invalid, or the submission is invalid
-
-      final token = jsonMap['message']['token'];
-
-      // replace this to a next page
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -81,61 +61,53 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
         ),
       );
     } on ApiException catch (apiError) {
-      if (mounted) {
-        final String errorMessage = apiError.message;
-        final int statusCode = apiError.statusCode;
+      if (!mounted) return;
 
-        // Now use the data in your dialog
-        if (statusCode == 400) {
-          showCustomDialog(
-            context: context,
-            title: 'Reset password failed',
-            content: errorMessage,
-          );
-        } else if (statusCode == 500) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reset password failed: $errorMessage')),
-          );
-        }
-      }
-    } catch (exception) {
-      if (mounted) {
-        // making sure that the app will display the error on where it happened
+      if (apiError.statusCode == 400) {
+        showCustomDialog(
+          context: context,
+          title: 'Reset password failed',
+          content: apiError.message,
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Reset password failed: ${exception.toString()}'),
-          ),
+          SnackBar(content: Text('Reset password failed: ${apiError.message}')),
         );
       }
+    } catch (exception) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Reset password failed: ${exception.toString()}'),
+        ),
+      );
     } finally {
-      if (mounted) {
-        // will be executed everytime, this terminates the loading icon (see line 106)
-        setState(() {
-          _isResettingPassword = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isResettingPassword = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      // this will be initialized FIRST (the initial value of this is true, making the loading icon appear). Then. after the request has been made, it will change the counter of this to false (line 91)
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
         ),
       );
     }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
@@ -144,11 +116,8 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-
                 const Center(
                   child: Text(
                     "QizMe",
@@ -160,40 +129,41 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 const Center(
                   child: Text(
                     "Forgot password",
                     style: TextStyle(fontSize: 20.0),
                   ),
                 ),
-
                 const Center(
                   child: Text(
                     "We have sent you a 4-digit code to reset your password.",
                     style: TextStyle(color: Colors.grey),
                   ),
                 ),
-
                 SizedBox(
                   width: 350,
-                  child: Builder(
-                    builder: (context) => Padding(
-                      padding: const EdgeInsets.all(40.0),
-                      child: Center(
-                        child: Center(
-                          child: Pinput(
-                            length: 4,
-                            controller: _codeController,
-                            onCompleted: (inputCode) =>
-                                code = int.parse(inputCode),
-                          ),
-                        ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(40.0),
+                    child: Center(
+                      child: Pinput(
+                        length: 4,
+                        controller: _codeController,
+                        onCompleted: (inputCode) =>
+                            _code = int.tryParse(inputCode),
+                        validator: (value) {
+                          if (value == null || value.length != 4) {
+                            return 'Enter 4-digit code';
+                          }
+                          if (int.tryParse(value) == null) {
+                            return 'Code must be numeric';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                   ),
                 ),
-
                 SizedBox(
                   width: 180,
                   height: 40,
@@ -204,7 +174,7 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPassword_VerifyCode> {
                           ),
                         )
                       : OutlinedButton(
-                          onPressed: _resetPassword,
+                          onPressed: _verifyCode,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.black,
                             side: const BorderSide(

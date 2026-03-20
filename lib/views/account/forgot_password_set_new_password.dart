@@ -1,9 +1,7 @@
-// ignore: file_names
-import 'dart:convert';
 import 'package:flutter/material.dart';
-
-import 'package:qizme/utils/http.dart';
+import 'package:qizme/repositories/auth_repository.dart';
 import 'package:qizme/utils/functions.dart';
+import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/home/home.dart';
 
 class ForgotPasswordSetNewPassword extends StatefulWidget {
@@ -21,6 +19,7 @@ class _ForgotPasswordSetNewPasswordState
   final _formKey = GlobalKey<FormState>();
   final _newPasswordController = TextEditingController();
   final _newPasswordReEnterController = TextEditingController();
+  final _authRepository = AuthRepository();
 
   bool _isLoading = true;
   bool _isResettingPassword = false;
@@ -34,13 +33,12 @@ class _ForgotPasswordSetNewPasswordState
   @override
   void dispose() {
     _newPasswordController.dispose();
+    _newPasswordReEnterController.dispose();
     super.dispose();
   }
 
   Future<void> _initializePreferences() async {
-    // Using standard SharedPreferences for this refactor.
-    // Replace with SharedPreferencesWithCache if that's your intended package.
-
+    await _authRepository.initializePreferences();
     if (!mounted) return;
 
     setState(() {
@@ -49,32 +47,21 @@ class _ForgotPasswordSetNewPasswordState
   }
 
   Future<void> _resetPassword() async {
-    // a function for readabilitiy
-    if (!_formKey.currentState!.validate()) {
-      // returns if the email or password is invalid
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
-      _isResettingPassword = true; // sets the initial counter for the loading
+      _isResettingPassword = true;
     });
 
     try {
-      // make an http request
-      final responseBody = await ApiService.postRequest(
-        "api/users/resetPassword",
-        {
-          "token": widget.token,
-          "newPassword": _newPasswordReEnterController.text,
-        },
+      final ok = await _authRepository.resetPassword(
+        token: widget.token,
+        newPassword: _newPasswordReEnterController.text,
       );
 
-      final jsonMap = jsonDecode(responseBody);
-      final apiResponse = jsonMap['success'];
-
       if (!mounted) return;
-      // replace this to a next page
-      if (apiResponse) {
+
+      if (ok) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const QizMe()),
@@ -82,61 +69,53 @@ class _ForgotPasswordSetNewPasswordState
         );
       }
     } on ApiException catch (apiError) {
-      if (mounted) {
-        final String errorMessage = apiError.message;
-        final int statusCode = apiError.statusCode;
+      if (!mounted) return;
 
-        // Now use the data in your dialog
-        if (statusCode == 400) {
-          showCustomDialog(
-            context: context,
-            title: 'Reset password failed',
-            content: errorMessage,
-          );
-        } else if (statusCode == 500) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reset password failed: $errorMessage')),
-          );
-        }
-      }
-    } catch (exception) {
-      if (mounted) {
-        // making sure that the app will display the error on where it happened
+      if (apiError.statusCode == 400) {
+        showCustomDialog(
+          context: context,
+          title: 'Reset password failed',
+          content: apiError.message,
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Reset password failed: ${exception.toString()}'),
-          ),
+          SnackBar(content: Text('Reset password failed: ${apiError.message}')),
         );
       }
+    } catch (exception) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Reset password failed: ${exception.toString()}'),
+        ),
+      );
     } finally {
-      if (mounted) {
-        // will be executed everytime, this terminates the loading icon (see line 106)
-        setState(() {
-          _isResettingPassword = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isResettingPassword = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      // this will be initialized FIRST (the initial value of this is true, making the loading icon appear). Then. after the request has been made, it will change the counter of this to false (line 91)
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
         ),
       );
     }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
@@ -145,11 +124,8 @@ class _ForgotPasswordSetNewPasswordState
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-
                 const Center(
                   child: Text(
                     "QizMe",
@@ -161,16 +137,13 @@ class _ForgotPasswordSetNewPasswordState
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 const Center(
                   child: Text(
                     "Forgot password",
                     style: TextStyle(fontSize: 20.0),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 SizedBox(
                   width: 350,
                   child: TextFormField(
@@ -193,13 +166,11 @@ class _ForgotPasswordSetNewPasswordState
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
                       }
-                      return null; // Return null if valid
+                      return null;
                     },
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 SizedBox(
                   width: 350,
                   child: TextFormField(
@@ -223,15 +194,13 @@ class _ForgotPasswordSetNewPasswordState
                         return 'Please re-enter your password';
                       }
                       if (value != _newPasswordController.text) {
-                        return 'Passwords do not match'; // The validation message
+                        return 'Passwords do not match';
                       }
-                      return null; // Return null if valid
+                      return null;
                     },
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 SizedBox(
                   width: 210,
                   height: 40,

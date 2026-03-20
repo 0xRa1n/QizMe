@@ -1,9 +1,7 @@
-// ignore: file_names
-import 'dart:convert';
 import 'package:flutter/material.dart';
-
-import 'package:qizme/utils/http.dart';
+import 'package:qizme/repositories/auth_repository.dart';
 import 'package:qizme/utils/functions.dart';
+import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/account/forgot_password_verify_code.dart';
 
 class ForgotPassword extends StatefulWidget {
@@ -16,6 +14,7 @@ class ForgotPassword extends StatefulWidget {
 class _ForgotPasswordState extends State<ForgotPassword> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _authRepository = AuthRepository();
 
   bool _isLoading = true;
   bool _isResettingPassword = false;
@@ -33,9 +32,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   }
 
   Future<void> _initializePreferences() async {
-    // Using standard SharedPreferences for this refactor.
-    // Replace with SharedPreferencesWithCache if that's your intended package.
-
+    await _authRepository.initializePreferences();
     if (!mounted) return;
 
     setState(() {
@@ -44,92 +41,75 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   }
 
   Future<void> _resetPassword() async {
-    // a function for readabilitiy
-    if (!_formKey.currentState!.validate()) {
-      // returns if the email or password is invalid
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
-      _isResettingPassword = true; // sets the initial counter for the loading
+      _isResettingPassword = true;
     });
 
     try {
-      // make an http request
-      final responseBody = await ApiService.postRequest(
-        "api/users/forgotPassword",
-        {"email": _emailController.text},
+      final ok = await _authRepository.requestPasswordResetCode(
+        email: _emailController.text.trim(),
       );
 
-      final jsonMap = jsonDecode(responseBody);
-      final apiResponse = jsonMap['success'];
-
       if (!mounted) return;
-      // replace this to a next page
-      if (apiResponse) {
+
+      if (ok) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const ForgotPassword_VerifyCode(),
+            builder: (context) => const ForgotPasswordVerifyCode(),
           ),
         );
       }
     } on ApiException catch (apiError) {
-      if (mounted) {
-        final String errorMessage = apiError.message;
-        final int statusCode = apiError.statusCode;
+      if (!mounted) return;
 
-        // Now use the data in your dialog
-        if (statusCode == 400) {
-          showCustomDialog(
-            context: context,
-            title: 'Reset password failed',
-            content: errorMessage,
-          );
-        } else if (statusCode == 500) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reset password failed: $errorMessage')),
-          );
-        }
-      }
-    } catch (exception) {
-      if (mounted) {
-        // making sure that the app will display the error on where it happened
+      if (apiError.statusCode == 400) {
+        showCustomDialog(
+          context: context,
+          title: 'Reset password failed',
+          content: apiError.message,
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Reset password failed: ${exception.toString()}'),
-          ),
+          SnackBar(content: Text('Reset password failed: ${apiError.message}')),
         );
       }
+    } catch (exception) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Reset password failed: ${exception.toString()}'),
+        ),
+      );
     } finally {
-      if (mounted) {
-        // will be executed everytime, this terminates the loading icon (see line 106)
-        setState(() {
-          _isResettingPassword = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isResettingPassword = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      // this will be initialized FIRST (the initial value of this is true, making the loading icon appear). Then. after the request has been made, it will change the counter of this to false (line 91)
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
         ),
       );
     }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
@@ -138,11 +118,8 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-
                 const Center(
                   child: Text(
                     "QizMe",
@@ -154,16 +131,13 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 const Center(
                   child: Text(
                     "Forgot password",
                     style: TextStyle(fontSize: 20.0),
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 SizedBox(
                   width: 350,
                   child: TextFormField(
@@ -191,9 +165,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                     },
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 SizedBox(
                   width: 180,
                   height: 40,

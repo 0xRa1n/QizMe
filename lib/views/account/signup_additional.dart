@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:qizme/repositories/auth_repository.dart';
+import 'package:qizme/utils/functions.dart';
 import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/home/home.dart';
-import 'package:qizme/utils/functions.dart';
 
 class SignupAdditional extends StatefulWidget {
   const SignupAdditional({super.key});
@@ -15,134 +13,76 @@ class SignupAdditional extends StatefulWidget {
 
 class _SignupAdditionalState extends State<SignupAdditional> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _authRepository = AuthRepository();
 
-  SharedPreferences? _prefs;
-  final bool _isLoading = false;
   bool _isSigningUp = false;
 
   @override
   void initState() {
     super.initState();
-    _initializePreferences();
+    _authRepository.initializePreferences(); // initialize preferences
   }
 
   @override
   void dispose() {
-    _usernameController.dispose();
     _nameController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
-  Future<void> _initializePreferences() async {
-    // Using standard SharedPreferences for this refactor.
-    // Replace with SharedPreferencesWithCache if that's your intended package.
-    _prefs = await SharedPreferences.getInstance();
-
-    if (!mounted) return;
-
-    setState(() {
-      _isSigningUp = false;
-    });
-  }
-
   Future<void> _signup() async {
-    // a function for readabilitiy
-    if (!_formKey.currentState!.validate()) {
-      // returns if the email or password is invalid
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return; // validates the form fields
 
-    setState(() {
-      _isSigningUp = true; // sets the initial counter for the loading
+    setState(() { // the purpose of this is to show the loading indicator
+      _isSigningUp = true;
     });
 
     try {
-      // get the email and password from shared preferences
-      final String? email = _prefs?.getString('email');
-      final String? password = _prefs?.getString('password');
-      // make an http request
-      final responseBody = await ApiService.postRequest("api/users/register", {
-        "name": _nameController.text,
-        "username": _usernameController.text,
-        "email": email,
-        "password": password,
-      });
+      await _authRepository.signupAdditional(
+        name: _nameController.text.trim(), // trims the name and username before sending to the server
+        username: _usernameController.text.trim(),
+      );
 
-      // parse the data from the endpoint
-      final jsonMap = jsonDecode(responseBody);
-      if (jsonMap['success'] == true) {
-        if (!mounted) return; // checks if the current widget still exists
+      if (!mounted) return;
 
-        final data = jsonMap['data'];
-        await _prefs!.setString('name', data['name'] ?? _nameController.text);
-        await _prefs!.setString('email', data['email'] ?? email ?? '');
-        await _prefs!.setString(
-          'username',
-          data['username'] ?? _usernameController.text,
-        );
-        await _prefs!.setString(
-          'profilePicture'
-          '',
-          data['profilePicture'] ?? '',
-        );
-
-        if (!mounted) return;
-
-        // direct the user to the home page
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const QizMe()),
-          (route) => false,
-        );
-
-        // remove email and password from shared preferences for security reasons
-        await _prefs?.remove('email');
-        await _prefs?.remove('password');
-      }
+      Navigator.pushAndRemoveUntil( // navigates to the QizMe screen and removes all previous screens from the stack
+        context,
+        MaterialPageRoute(builder: (context) => const QizMe()),
+        (route) => false,
+      );
     } on ApiException catch (apiError) {
-      if (mounted) {
-        final String errorMessage = apiError.message;
-        final int statusCode = apiError.statusCode;
+      if (!mounted) return;
 
-        // Now use the data in your dialog
-        if (statusCode == 400) {
-          showCustomDialog(
-            context: context,
-            title: 'Signup Failed',
-            content: errorMessage,
-          );
-        }
+      if (apiError.statusCode == 400) {
+        showCustomDialog(
+          context: context,
+          title: 'Signup Failed',
+          content: apiError.message,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Signup Failed: ${apiError.message}')),
+        );
       }
     } catch (exception) {
-      if (mounted) {
-        // making sure that the app will display the error on where it happened
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Signup Failed: ${exception.toString()}')),
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Signup Failed: ${exception.toString()}')),
+      );
     } finally {
-      if (mounted) {
-        // will be executed everytime, this terminates the loading icon
-        setState(() {
-          _isSigningUp = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isSigningUp = false; // stops the loading indicator
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      // this will be initialized FIRST (the initial value of this is true, making the loading icon appear). Then. after the request has been made, it will change the counter of this to false (line 91)
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
-        ),
-      );
-    }
-
     return Scaffold(
       body: Stack(
         children: [
@@ -191,7 +131,7 @@ class _SignupAdditionalState extends State<SignupAdditional> {
                     SizedBox(
                       width: 350,
                       child: TextFormField(
-                        controller: _usernameController,
+                        controller: _nameController,
                         cursorColor: Colors.black,
                         decoration: const InputDecoration(
                           focusedBorder: OutlineInputBorder(
@@ -219,7 +159,7 @@ class _SignupAdditionalState extends State<SignupAdditional> {
                     SizedBox(
                       width: 350,
                       child: TextFormField(
-                        controller: _nameController,
+                        controller: _usernameController,
                         cursorColor: Colors.black,
                         decoration: const InputDecoration(
                           focusedBorder: OutlineInputBorder(
