@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:qizme/views/home/widgets/home_widgets.dart';
-import 'package:qizme/views/home/widgets/menu_widgets.dart';
+import 'package:qizme/views/widgets/home_widgets.dart';
+import 'package:qizme/views/widgets/menu_widgets.dart';
 import 'package:qizme/views/home/tabs/edit_account.dart';
 
 class QizMe extends StatefulWidget {
@@ -83,10 +83,6 @@ class _QizMeState extends State<QizMe> {
     }
     final cacheBustedUrl =
         '$resolvedUrl?ts=${DateTime.now().millisecondsSinceEpoch}';
-
-    final ImageProvider avatarProvider = profilePicture.isNotEmpty
-        ? NetworkImage(resolvedUrl)
-        : const AssetImage('assets/images/user.png');
 
     return Container(
       margin: const EdgeInsets.only(top: 65),

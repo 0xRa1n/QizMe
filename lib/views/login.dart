@@ -1,12 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:qizme/controllers/login_controller.dart';
 import 'package:qizme/views/account/signup.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/home/home.dart';
 import 'package:qizme/utils/functions.dart';
 import 'package:qizme/views/account/forgot_password.dart';
+import 'package:qizme/utils/http.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -19,111 +17,79 @@ class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  SharedPreferences? _prefs;
-  bool _isLoading = true;
-  bool _isLoggingIn = false;
+  late final LoginController _controller;
 
   @override
   void initState() {
     super.initState();
-    _initializePreferences();
+    _controller = LoginController()
+      ..addListener(
+        _onControllerChanged,
+      ); // this adds a listener to the controller so that the UI can be updated when the controller changes
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _controller.initialize();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      await _controller.login(
+        email: _emailController.text
+            .trim(), // removes any leading or trailing whitespace from the email
+        password: _passwordController.text,
+      );
+
+      if (!mounted)
+        return; // if the widget is no longer mounted, do not update the UI; mounted means the widget is still being used
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const QizMe()),
+      ); // go to the home screen if there's no error (errors will be handled below)
+    } on ApiException catch (apiError) {
+      if (!mounted) return;
+
+      if (apiError.statusCode == 400) {
+        showCustomDialog(
+          context: context,
+          title: 'Login Failed',
+          content: apiError.message,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login Failed: ${apiError.message}')),
+        );
+      }
+    } catch (exception) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login Failed: ${exception.toString()}')),
+      );
+    }
   }
 
   @override
   void dispose() {
+    // dispose means to clean up resources when the widget is no longer in use
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _initializePreferences() async {
-    // Using standard SharedPreferences for this refactor.
-    // Replace with SharedPreferencesWithCache if that's your intended package.
-    _prefs = await SharedPreferences.getInstance();
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  Future<void> _login() async {
-    // a function for readabilitiy
-    if (!_formKey.currentState!.validate()) {
-      // returns if the email or password is invalid
-      return;
-    }
-
-    setState(() {
-      _isLoggingIn = true; // sets the initial counter for the loading
-    });
-
-    try {
-      // make an http request
-      final responseBody = await ApiService.postRequest("api/users/login", {
-        "email": _emailController.text,
-        "password": _passwordController.text,
-      });
-
-      // parse the data from the endpoint
-      final jsonMap = jsonDecode(responseBody);
-
-      final userData = jsonMap['data'];
-      final userPrefs = userData['userPreference'];
-
-      // set the static values to the current session
-      await Future.wait([
-        _prefs!.setString("email", _emailController.text),
-        _prefs!.setString("name", userData['name']),
-        _prefs!.setBool("pushNotifications", userPrefs['pushNotifications']),
-        _prefs!.setString("appTheme", userPrefs['appTheme']),
-        _prefs!.setString("profilePicture", userData['profilePicture'] ?? ""),
-      ]);
-
-      if (!mounted) return; // checks if the current widget still exists
-
-      // direct the user to the home page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const QizMe()),
-      );
-    } on ApiException catch (apiError) {
-      if (mounted) {
-        final String errorMessage = apiError.message;
-        final int statusCode = apiError.statusCode;
-
-        // Now use the data in your dialog
-        if (statusCode == 400) {
-          showCustomDialog(
-            context: context,
-            title: 'Login Failed',
-            content: errorMessage,
-          );
-        }
-      }
-    } catch (exception) {
-      if (mounted) {
-        // making sure that the app will display the error on where it happened
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Failed: ${exception.toString()}')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        // will be executed everytime, this terminates the loading icon
-        setState(() {
-          _isLoggingIn = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      // this will be initialized FIRST (the initial value of this is true, making the loading icon appear). Then. after the request has been made, it will change the counter of this to false (line 91)
+    if (_controller.isLoading) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
@@ -246,7 +212,7 @@ class _LoginState extends State<Login> {
                     SizedBox(
                       width: 180,
                       height: 40,
-                      child: _isLoggingIn
+                      child: _controller.isLoggingIn
                           ? const Center(
                               child: CircularProgressIndicator(
                                 color: Color(0xFF5D8A56),
@@ -282,7 +248,6 @@ class _LoginState extends State<Login> {
                           const Text("Don't have an account?"),
                           InkWell(
                             onTap: () {
-                              // TODO: Navigate to Sign Up page
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(

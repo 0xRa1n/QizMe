@@ -24,9 +24,7 @@ class _SignupState extends State<Signup> {
 
   // create a function that will save the email and password to the sharedpreference
   Future<void> _saveCredentials() async {
-    if (_prefs == null) {
-      _prefs = await SharedPreferences.getInstance();
-    }
+    _prefs = await SharedPreferences.getInstance();
     await _prefs!.setString('email', email);
     await _prefs!.setString('password', password);
   }
