@@ -45,3 +45,4 @@ Seventh, the `widgets` tab
 
 Eight, the `constants.dart`
 - This file is meant for the things that is not changeable (static)
+- However, it is not included (for safety purposes, and I do not want to complicate this further by installing dotenv)
