@@ -70,6 +70,7 @@ class ApiService {
       // Re-throw the ApiException so it can be caught by the UI layer
       rethrow;
     } catch (e) {
+      // print('POST Request Error: $e');
       // Catch other exceptions (like SocketException for no network) and wrap them
       throw Exception(
         'Network Error: Please check your connection and try again.',
@@ -84,9 +85,9 @@ class ApiService {
     String filePath,
   ) async {
     final url = Uri.parse('$baseUrl/$endpoint');
-    print('POST FILE URL: $url');
-    print('FILE PATH: $filePath');
-    print('FIELDS: $fields');
+    // print('POST FILE URL: $url');
+    // print('FILE PATH: $filePath');
+    // print('FIELDS: $fields');
 
     try {
       final request = http.MultipartRequest('POST', url)

@@ -58,7 +58,7 @@ class AuthRepository {
   Future<bool> requestPasswordResetCode({required String email}) async {
     final result = await AuthService.requestPasswordResetCode(email: email);
     final jsonMap = jsonDecode(result["raw"]);
-    return jsonMap['success'] == true;
+    return jsonMap['success'];
   }
 
   Future<String> verifyPasswordResetCode({required int code}) async {

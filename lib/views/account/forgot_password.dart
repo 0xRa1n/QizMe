@@ -51,7 +51,6 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       final ok = await _authRepository.requestPasswordResetCode(
         email: _emailController.text.trim(),
       );
-
       if (!mounted) return;
 
       if (ok) {
@@ -77,6 +76,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         );
       }
     } catch (exception) {
+      print(exception);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

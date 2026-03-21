@@ -136,9 +136,18 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPasswordVerifyCode> {
                   ),
                 ),
                 const Center(
-                  child: Text(
-                    "We have sent you a 4-digit code to reset your password.",
-                    style: TextStyle(color: Colors.grey),
+                  child: Column(
+                    children: [
+                      Text(
+                        "We have sent you a 4-digit code to reset your password.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "Can't find it? Check your spam folder.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(
