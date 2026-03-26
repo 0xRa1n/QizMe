@@ -5,6 +5,7 @@ import 'package:qizme/views/home/home.dart';
 import 'package:qizme/utils/functions.dart';
 import 'package:qizme/views/account/forgot_password.dart';
 import 'package:qizme/utils/http.dart';
+import 'package:qizme/views/widgets/login_widgets.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -89,26 +90,21 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    // if (_controller.isLoading) {
-    //   return const Scaffold(
-    //     body: Center(
-    //       child: CircularProgressIndicator(color: Color(0xFF5D8A56)),
-    //     ),
-    //   );
-    // }
-
+    // We use the Scaffold background for the top green part
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            height: MediaQuery.of(context).size.height * 0.4,
-            color: const Color(0xFF5D8A56),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.8,
+      backgroundColor: const Color(0xFF5D8A56),
+      body: SingleChildScrollView(
+        // This allows the UI to scroll when the keyboard appears
+        child: Column(
+          children: [
+            // This creates the transparent space at the top to show the green background
+            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+            Container(
               width: double.infinity,
+              // Constraints ensure the white sheet fills at least the rest of the screen
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
@@ -116,7 +112,10 @@ class _LoginState extends State<Login> {
                   topRight: Radius.circular(55.0),
                 ),
               ),
-              padding: const EdgeInsets.all(30.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 30.0,
+                vertical: 40.0,
+              ),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -131,87 +130,55 @@ class _LoginState extends State<Login> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      width: 350,
-                      child: TextFormField(
-                        controller: _emailController,
-                        cursorColor: Colors.black,
-                        decoration: const InputDecoration(
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Color(0xFF5D8A56),
-                              width: 1.0,
-                            ),
-                          ),
-                          floatingLabelStyle: TextStyle(
-                            color: Color(0xFF5D8A56),
-                          ),
-                          border: OutlineInputBorder(),
-                          labelText: 'Email',
-                          labelStyle: TextStyle(fontSize: 18.0),
-                        ),
-                        validator: (value) {
-                          if (value == null ||
-                              value.isEmpty ||
-                              !value.contains('@')) {
-                            return 'Please enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
+                    // Email field
+                    createTextField(
+                      // a custom function stored at views/widgets/login_widgets.dart
+                      controller: _emailController,
+                      label: 'Email',
+                      validator: (value) {
+                        if (value == null ||
+                            value.isEmpty ||
+                            !value.contains('@')) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      width: 350,
-                      child: TextFormField(
-                        controller: _passwordController,
-                        cursorColor: Colors.black,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Color(0xFF5D8A56),
-                              width: 1.0,
-                            ),
-                          ),
-                          floatingLabelStyle: TextStyle(
-                            color: Color(0xFF5D8A56),
-                          ),
-                          border: OutlineInputBorder(),
-                          labelText: 'Password',
-                          labelStyle: TextStyle(fontSize: 18.0),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          return null;
-                        },
-                      ),
+                    // Password field
+                    createTextField(
+                      // a custom function stored at views/widgets/login_widgets.dart
+                      controller: _passwordController,
+                      label: 'Password',
+                      obscure: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      width: 350,
+                    Align(
+                      alignment: Alignment.centerRight,
                       child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ForgotPassword(),
-                            ),
-                          );
-                        },
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPassword(),
+                          ),
+                        ),
                         child: const Text(
                           "Forgot password",
-                          textAlign: TextAlign.right,
                           style: TextStyle(fontSize: 14),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 40),
+                    // Login Button
                     SizedBox(
                       width: 180,
-                      height: 40,
+                      height: 45,
                       child: _controller.isLoggingIn
                           ? const Center(
                               child: CircularProgressIndicator(
@@ -221,14 +188,10 @@ class _LoginState extends State<Login> {
                           : OutlinedButton(
                               onPressed: _login,
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.black,
-                                side: const BorderSide(
-                                  color: Color.fromARGB(255, 154, 154, 154),
-                                ),
+                                side: const BorderSide(color: Colors.grey),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20.0),
                                 ),
-                                overlayColor: const Color(0xFF5D8A56),
                               ),
                               child: const Text(
                                 'Login',
@@ -239,36 +202,61 @@ class _LoginState extends State<Login> {
                               ),
                             ),
                     ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: 350,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text("Don't have an account?"),
-                          InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const Signup(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              child: const Text("Sign up"),
+                    const SizedBox(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("Don't have an account?"),
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const Signup(),
                             ),
                           ),
-                        ],
-                      ),
+                          child: const Text(
+                            "Sign up",
+                            style: TextStyle(color: Color(0xFF5D8A56)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Extra padding to ensure the keyboard doesn't cover the bottom-most text
+                    SizedBox(
+                      height: MediaQuery.of(context).viewInsets.bottom > 0
+                          ? 20
+                          : 0,
                     ),
                   ],
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to keep code clean
+  Widget buildTextField({
+    required TextEditingController controller,
+    required String label,
+    bool obscure = false,
+    String? Function(String?)? validator,
+  }) {
+    return SizedBox(
+      width: 350,
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscure,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF5D8A56)),
           ),
-        ],
+        ),
+        validator: validator,
       ),
     );
   }

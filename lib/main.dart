@@ -19,6 +19,14 @@ class MyApp extends StatelessWidget {
         textTheme: const TextTheme(
           bodyMedium: TextStyle(fontFamily: 'AlbertSans'),
         ),
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor:
+              Colors.black, // sets the cursor to black (the blinking like)
+          selectionColor:
+              Colors.grey, // sets the selected to color grey (highlighted)
+          selectionHandleColor: Colors
+              .green, // sets the selection handle (line with green at the bottom) to green
+        ),
       ),
       home: SplashScreen(),
       debugShowCheckedModeBanner: false,
