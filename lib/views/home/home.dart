@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qizme/views/widgets/home_widgets.dart';
 import 'package:qizme/views/widgets/menu_widgets.dart';
 import 'package:qizme/views/home/tabs/edit_account.dart';
+import 'package:qizme/views/home/tabs/add_card_set.dart';
 
 class QizMe extends StatefulWidget {
   const QizMe({super.key});
@@ -16,6 +17,7 @@ class _QizMeState extends State<QizMe> {
   SharedPreferences? _prefs;
   bool _isLoading = true;
   bool _showEditAccount = false;
+  bool _showSettings = false;
 
   static const double iconSize = 31;
 
@@ -128,6 +130,11 @@ class _QizMeState extends State<QizMe> {
                 _showEditAccount = true;
               });
             },
+            onSettingsTap: () {
+              setState(() {
+                _showSettings = true;
+              });
+            },
           ),
           const Spacer(),
           buildMenuLogout(context: context),
@@ -152,7 +159,7 @@ class _QizMeState extends State<QizMe> {
 
     final pages = <Widget>[
       _buildHomePage(),
-      const Center(child: Text('Add Card Set Page')),
+      AddCardSet(),
       const Center(child: Text('Library Page')),
       _showEditAccount
           ? EditAccountPage(

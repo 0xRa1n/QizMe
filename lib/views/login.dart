@@ -48,15 +48,18 @@ class _LoginState extends State<Login> {
         password: _passwordController.text,
       );
 
-      if (!mounted)
-        return; // if the widget is no longer mounted, do not update the UI; mounted means the widget is still being used
+      if (!mounted) {
+        return;
+      } // if the widget is no longer mounted, do not update the UI; mounted means the widget is still being used
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const QizMe()),
       ); // go to the home screen if there's no error (errors will be handled below)
     } on ApiException catch (apiError) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (apiError.statusCode == 400) {
         showCustomDialog(
@@ -70,7 +73,9 @@ class _LoginState extends State<Login> {
         );
       }
     } catch (exception) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login Failed: ${exception.toString()}')),

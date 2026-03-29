@@ -120,11 +120,13 @@ class ApiService {
     try {
       responseBody = jsonDecode(response.body);
     } catch (_) {
+      // If parsing fails but status is success, return raw string (e.g., for plain text responses)
       if (statusCode >= 200 && statusCode < 300) return response.body;
       throw ApiException(response.body, statusCode);
     }
 
-    if (statusCode >= 200 && statusCode < 300) return response.body;
+    if (statusCode >= 200 && statusCode < 300) return responseBody;
+
     if (statusCode >= 400 && statusCode < 500) {
       throw ApiException(
         responseBody['error']?['message'] ?? 'Client error',

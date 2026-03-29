@@ -4,6 +4,7 @@ import 'package:qizme/views/login.dart';
 Widget buildMenuButtons({
   required BuildContext context,
   required VoidCallback onAccountTap,
+  required VoidCallback onSettingsTap,
 }) {
   return Column(
     children: [
@@ -38,7 +39,7 @@ Widget buildMenuButtons({
         child: SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: () {},
+            onPressed: onSettingsTap,
             style: OutlinedButton.styleFrom(
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.all(16.0),

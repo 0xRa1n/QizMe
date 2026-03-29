@@ -39,7 +39,9 @@ class _ForgotPasswordSetNewPasswordState
 
   Future<void> _initializePreferences() async {
     await _authRepository.initializePreferences();
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       _isLoading = false;
@@ -47,7 +49,9 @@ class _ForgotPasswordSetNewPasswordState
   }
 
   Future<void> _resetPassword() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() {
       _isResettingPassword = true;
@@ -59,9 +63,12 @@ class _ForgotPasswordSetNewPasswordState
         newPassword: _newPasswordReEnterController.text,
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (ok) {
+        // to-do: add a message if the password reset has been successful.
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const QizMe()),
@@ -69,7 +76,9 @@ class _ForgotPasswordSetNewPasswordState
         );
       }
     } on ApiException catch (apiError) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (apiError.statusCode == 400) {
         showCustomDialog(
@@ -83,7 +92,9 @@ class _ForgotPasswordSetNewPasswordState
         );
       }
     } catch (exception) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -91,8 +102,6 @@ class _ForgotPasswordSetNewPasswordState
         ),
       );
     } finally {
-      if (!mounted) return;
-
       setState(() {
         _isResettingPassword = false;
       });
