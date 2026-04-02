@@ -1,11 +1,10 @@
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qizme/services/auth_service.dart';
 
 class AuthRepository {
   Future<void> login({required String email, required String password}) async {
     final result = await AuthService.login(email: email, password: password);
-    final jsonMap = jsonDecode(result["raw"]);
+    final jsonMap = result;
 
     final userData = jsonMap['data'] ?? {};
     final userPrefs = userData['userPreference'] ?? {};
@@ -43,7 +42,7 @@ class AuthRepository {
       password: password,
     );
 
-    final jsonMap = jsonDecode(result["raw"]);
+    final jsonMap = result;
     final data = jsonMap['data'] ?? {};
 
     await Future.wait([
@@ -57,13 +56,13 @@ class AuthRepository {
 
   Future<bool> requestPasswordResetCode({required String email}) async {
     final result = await AuthService.requestPasswordResetCode(email: email);
-    final jsonMap = jsonDecode(result["raw"]);
+    final jsonMap = result;
     return jsonMap['success'];
   }
 
   Future<String> verifyPasswordResetCode({required int code}) async {
     final result = await AuthService.verifyPasswordResetCode(code: code);
-    final jsonMap = jsonDecode(result["raw"]);
+    final jsonMap = result;
     final token = jsonMap['message']?['token'];
 
     if (token == null || token is! String || token.isEmpty) {
@@ -81,7 +80,7 @@ class AuthRepository {
       token: token,
       newPassword: newPassword,
     );
-    final jsonMap = jsonDecode(result["raw"]);
+    final jsonMap = result;
 
     final success = jsonMap['success'] == true;
     if (!success) {
