@@ -11,8 +11,14 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _pushNotifications = false;
-  bool _darkMode = false;
+  // Current values that the user can change
+  late bool _pushNotifications;
+  late bool _darkMode;
+
+  // Initial values loaded from storage
+  late bool _initialPushNotifications;
+  late bool _initialDarkMode;
+
   bool _isLoading = true;
 
   @override
@@ -24,9 +30,15 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+
+    // Load the initial values
+    _initialPushNotifications = prefs.getBool('pushNotifications') ?? false;
+    _initialDarkMode = (prefs.getString('appTheme') ?? 'light') == 'dark';
+
+    // Set the current values to be the same as the initial ones
     setState(() {
-      _pushNotifications = prefs.getBool('pushNotifications') ?? false;
-      _darkMode = (prefs.getString('appTheme') ?? 'light') == 'dark';
+      _pushNotifications = _initialPushNotifications;
+      _darkMode = _initialDarkMode;
       _isLoading = false;
     });
   }
@@ -45,11 +57,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    // This will be called when the widget is removed from the widget tree
-    widget.onBack({
-      'pushNotifications': _pushNotifications,
-      'darkMode': _darkMode,
-    });
+    // Check if the current values are different from the initial values
+    final bool hasChanged =
+        _pushNotifications != _initialPushNotifications ||
+        _darkMode != _initialDarkMode;
+
+    // Only call the onBack callback if a change was made
+    if (hasChanged) {
+      widget.onBack({
+        'pushNotifications': _pushNotifications,
+        'darkMode': _darkMode,
+      });
+    }
     super.dispose();
   }
 
@@ -63,13 +82,13 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          settingsRow(
+          _buildSettingItem(
             label: 'Push notifications',
             value: _pushNotifications,
             onChanged: _updatePushNotifications,
           ),
           const SizedBox(height: 10),
-          settingsRow(
+          _buildSettingItem(
             label: 'Dark mode',
             value: _darkMode,
             onChanged: _updateDarkMode,
@@ -79,7 +98,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget settingsRow({
+  Widget _buildSettingItem({
     required String label,
     required bool value,
     required ValueChanged<bool> onChanged,

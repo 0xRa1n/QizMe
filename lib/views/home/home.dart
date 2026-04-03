@@ -175,6 +175,12 @@ class _QizMeState extends State<QizMe> {
     if (_showSettings) {
       return SettingsPage(
         onBack: (settings) {
+          // now, this is very important
+          // we have to know if the user's choices are still the same
+          // this is to avoid unnecessary database updates (also api calls)
+          // we must first save to the preference the user's choices from the settings.dart in the tabs folder. then, we will determine here if the user's choices are still the same as the ones saved in the preferences
+          // if they are the same, we can avoid updating the database and api calls
+          // if they are different, we must update the database and api calls
           print('User settings choices: $settings');
           // You can now save these settings to your database
         },
