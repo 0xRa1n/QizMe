@@ -18,7 +18,8 @@ class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  late final LoginController _controller;
+  late final LoginController
+  _controller; // the late here allows the controller to be initialized after the widget is built. Without it, the controller would be initialized before the widget is built, which would cause a null reference error.
 
   @override
   void initState() {

@@ -14,11 +14,8 @@ class AuthRepository {
     await Future.wait([
       prefs.setString("email", email),
       prefs.setString("name", userData['name'] ?? ""),
-      prefs.setBool(
-        "pushNotifications",
-        userPrefs['pushNotifications'] ?? false,
-      ),
-      prefs.setString("appTheme", userPrefs['appTheme'] ?? "light"),
+      prefs.setBool("pushNotification", userPrefs['pushNotification'] ?? false),
+      prefs.setBool("darkMode", userPrefs['darkMode'] ?? false),
       prefs.setString("profilePicture", userData['profilePicture'] ?? ""),
     ]);
   }
@@ -92,5 +89,30 @@ class AuthRepository {
 
   Future<void> initializePreferences() async {
     await SharedPreferences.getInstance();
+  }
+
+  Future<void> updateUserPreferences({
+    required bool darkMode,
+    required bool pushNotification,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('email');
+
+    if (email == null) {
+      throw Exception('User not logged in.');
+    }
+
+    // Call the service to update the database
+    await AuthService.updateUserPreferences(
+      email: email,
+      darkMode: darkMode,
+      pushNotification: pushNotification,
+    );
+
+    // Update local storage
+    await Future.wait([
+      prefs.setBool("pushNotification", pushNotification),
+      prefs.setBool("darkMode", darkMode),
+    ]);
   }
 }

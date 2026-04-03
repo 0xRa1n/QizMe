@@ -5,6 +5,8 @@ import 'package:qizme/views/widgets/menu_widgets.dart';
 import 'package:qizme/views/home/tabs/edit_account.dart';
 import 'package:qizme/views/home/tabs/add_card_set.dart';
 import 'package:qizme/views/home/tabs/settings.dart';
+// Add this import at the top of your file
+import 'package:qizme/repositories/auth_repository.dart';
 
 class QizMe extends StatefulWidget {
   const QizMe({super.key});
@@ -19,6 +21,9 @@ class _QizMeState extends State<QizMe> {
   bool _isLoading = true;
   bool _showEditAccount = false;
   bool _showSettings = false;
+
+  final AuthRepository _authRepository =
+      AuthRepository(); // since the Auth Repository is a class, we have to instantiate it
 
   static const double iconSize = 31;
 
@@ -174,15 +179,25 @@ class _QizMeState extends State<QizMe> {
 
     if (_showSettings) {
       return SettingsPage(
-        onBack: (settings) {
-          // now, this is very important
-          // we have to know if the user's choices are still the same
-          // this is to avoid unnecessary database updates (also api calls)
-          // we must first save to the preference the user's choices from the settings.dart in the tabs folder. then, we will determine here if the user's choices are still the same as the ones saved in the preferences
-          // if they are the same, we can avoid updating the database and api calls
-          // if they are different, we must update the database and api calls
-          print('User settings choices: $settings');
-          // You can now save these settings to your database
+        onBack: (settings) async {
+          // Make the callback async
+          // The 'settings' object is a Map, so access its values with ['key']
+          final pushNotification = settings['pushNotification'] ?? false;
+          final darkMode = settings['darkMode'] ?? false;
+
+          try {
+            // Call the method on the _authRepository instance
+            await _authRepository.updateUserPreferences(
+              darkMode: darkMode,
+              pushNotification: pushNotification,
+            );
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to save settings: $e')),
+              );
+            }
+          }
         },
       );
     }

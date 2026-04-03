@@ -61,4 +61,21 @@ class AuthService {
 
     return {"raw": responseBody};
   }
+
+  static Future<Map<String, dynamic>> updateUserPreferences({
+    required String email,
+    required bool darkMode,
+    required bool pushNotification,
+  }) async {
+    final responseBody = await ApiService.putRequest(
+      "api/users/profile/updatePreference",
+      {
+        "email": email,
+        "darkMode": darkMode,
+        "pushNotification": pushNotification,
+      },
+    );
+
+    return responseBody;
+  }
 }

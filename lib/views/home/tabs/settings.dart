@@ -12,11 +12,11 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   // Current values that the user can change
-  late bool _pushNotifications;
+  late bool _pushNotification;
   late bool _darkMode;
 
   // Initial values loaded from storage
-  late bool _initialPushNotifications;
+  late bool _initialPushNotification;
   late bool _initialDarkMode;
 
   bool _isLoading = true;
@@ -32,20 +32,20 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!mounted) return;
 
     // Load the initial values
-    _initialPushNotifications = prefs.getBool('pushNotifications') ?? false;
-    _initialDarkMode = (prefs.getString('appTheme') ?? 'light') == 'dark';
+    _initialPushNotification = prefs.getBool('pushNotification') ?? false;
+    _initialDarkMode = prefs.getBool("darkMode") ?? false;
 
     // Set the current values to be the same as the initial ones
     setState(() {
-      _pushNotifications = _initialPushNotifications;
+      _pushNotification = _initialPushNotification;
       _darkMode = _initialDarkMode;
       _isLoading = false;
     });
   }
 
-  void _updatePushNotifications(bool value) {
+  void _updatePushNotification(bool value) {
     setState(() {
-      _pushNotifications = value;
+      _pushNotification = value;
     });
   }
 
@@ -59,13 +59,13 @@ class _SettingsPageState extends State<SettingsPage> {
   void dispose() {
     // Check if the current values are different from the initial values
     final bool hasChanged =
-        _pushNotifications != _initialPushNotifications ||
+        _pushNotification != _initialPushNotification ||
         _darkMode != _initialDarkMode;
 
     // Only call the onBack callback if a change was made
     if (hasChanged) {
       widget.onBack({
-        'pushNotifications': _pushNotifications,
+        'pushNotification': _pushNotification,
         'darkMode': _darkMode,
       });
     }
@@ -84,13 +84,14 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           _buildSettingItem(
             label: 'Push notifications',
-            value: _pushNotifications,
-            onChanged: _updatePushNotifications,
+            value:
+                _pushNotification, // this automatically sets the value of the switch
+            onChanged: _updatePushNotification,
           ),
           const SizedBox(height: 10),
           _buildSettingItem(
             label: 'Dark mode',
-            value: _darkMode,
+            value: _darkMode, // this automatically sets the value of the switch
             onChanged: _updateDarkMode,
           ),
         ],
