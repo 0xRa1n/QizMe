@@ -43,6 +43,17 @@ class _QizMeState extends State<QizMe> {
     });
   }
 
+  // Method to allow child widgets to change the tab
+  void changeTab(int index) {
+    setState(() {
+      currentPageIndex = index;
+      if (index != 3) {
+        _showEditAccount = false;
+        _showSettings = false;
+      }
+    });
+  }
+
   Future<void> _refreshUserData() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -63,12 +74,8 @@ class _QizMeState extends State<QizMe> {
             const SizedBox(height: 25),
             buildCalendarSection(),
             const SizedBox(height: 35),
-            const Text(
-              'Mastery Dashboard',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 15),
-            buildCreateSubjectCard(),
+            // Pass the changeTab method as a callback here
+            buildCreateSubjectCard(onAddCardSet: () => changeTab(1)),
             const SizedBox(height: 20),
           ],
         ),
@@ -221,7 +228,7 @@ class _QizMeState extends State<QizMe> {
 
     final pages = <Widget>[
       _buildHomePage(),
-      AddCardSet(),
+      const AddCardSet(),
       const Center(child: Text('Library Page')),
       _buildMenuPage(),
     ];
