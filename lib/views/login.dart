@@ -6,6 +6,7 @@ import 'package:qizme/utils/functions.dart';
 import 'package:qizme/views/account/forgot_password.dart';
 import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/widgets/login_widgets.dart';
+import 'package:email_validator/email_validator.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -142,9 +143,7 @@ class _LoginState extends State<Login> {
                       controller: _emailController,
                       label: 'Email',
                       validator: (value) {
-                        if (value == null ||
-                            value.isEmpty ||
-                            !value.contains('@')) {
+                        if (!EmailValidator.validate(value ?? "")) {
                           return 'Please enter a valid email';
                         }
                         return null;

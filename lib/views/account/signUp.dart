@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qizme/views/account/signup_additional.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:email_validator/email_validator.dart';
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -108,9 +109,7 @@ class _SignupState extends State<Signup> {
                           labelStyle: TextStyle(fontSize: 18.0),
                         ),
                         validator: (value) {
-                          if (value == null ||
-                              value.isEmpty ||
-                              !value.contains('@')) {
+                          if (!EmailValidator.validate(value ?? "")) {
                             return 'Please enter a valid email';
                           }
                           return null;
