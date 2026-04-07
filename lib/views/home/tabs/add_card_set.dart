@@ -2,23 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:qizme/services/card_service.dart';
 import 'package:qizme/utils/http.dart';
 import 'package:qizme/utils/functions.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddCardSet extends StatefulWidget {
-  const AddCardSet({super.key});
+  final bool darkMode; // Add darkMode property
+
+  const AddCardSet({
+    super.key,
+    required this.darkMode, // Require it in the constructor
+  });
 
   @override
   State<AddCardSet> createState() => _AddCardSetState();
 }
 
 class _AddCardSetState extends State<AddCardSet> {
+  Future<String> _loadEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('email') ?? '';
+  }
+
   final TextEditingController _cardSetNameController = TextEditingController();
 
   // get the text
   String get cardSetName => _cardSetNameController.text;
+
   Future<void> _createCardSet() async {
+    final email = await _loadEmail();
+    if (email.isEmpty) {
+      if (!mounted) return;
+      showCustomDialog(
+        context: context,
+        title: 'Error',
+        content: 'Could not find user email. Please log in again.',
+      );
+      return;
+    }
     // call the service to create the card set
     try {
-      final result = await CardService.createCardSet(name: cardSetName);
+      final result = await CardService.createCardSet(
+        email: email,
+        name: cardSetName,
+      );
       final jsonMap = result["raw"];
 
       if (jsonMap['success'] == true) {
@@ -43,7 +68,7 @@ class _AddCardSetState extends State<AddCardSet> {
       if (apiError.statusCode == 400) {
         showCustomDialog(
           context: context,
-          title: 'Login Failed',
+          title: 'Create card set failed',
           content: apiError.message,
         );
       } else {
@@ -68,121 +93,97 @@ class _AddCardSetState extends State<AddCardSet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: const Color(
-          0xFFF8F9FA,
-        ), // Slightly off-white background
-        // appBar: AppBar(
-        //   backgroundColor: const Color(0xFFEBEBEB), // Light grey header matching the image
-        //   elevation: 0,
-        //   leading: Padding(
-        //     padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-        //     child: Container(
-        //       decoration: BoxDecoration(
-        //         shape: BoxShape.circle,
-        //         border: Border.all(color: Colors.black, width: 1.5),
-        //       ),
-        //       child: IconButton(
-        //         padding: EdgeInsets.zero,
-        //         icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
-        //         onPressed: () {
-        //           // Navigation logic to pop the route
-        //         },
-        //       ),
-        //     ),
-        //   ),
-        //   title: const Text(
-        //     'Add Card Sets',
-        //     style: TextStyle(
-        //       color: Colors.black,
-        //       fontWeight: FontWeight.bold,
-        //       fontSize: 18.0,
-        //     ),
-        //   ),
-        //   centerTitle: false,
-        // ),
-        body: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: SizedBox(
-            width: double.infinity, // This line is crucial for expansion
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment:
-                  CrossAxisAlignment.center, // This line centers the children
-              children: [
-                Container(
-                  width: 300,
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD9D9D9),
-                    borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(color: Colors.black54, width: 1.0),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Card set name',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14.0,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8.0),
-                      TextField(
-                        controller: _cardSetNameController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter a card set name',
-                          hintStyle: const TextStyle(
-                            color: Colors.black38,
-                            fontSize: 14.0,
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12.0,
-                            vertical: 10.0,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6.0),
-                            borderSide: const BorderSide(color: Colors.black38),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6.0),
-                            borderSide: const BorderSide(color: Colors.black38),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6.0),
-                            borderSide: const BorderSide(color: Colors.blue),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16.0),
-                ElevatedButton(
-                  onPressed: () => _createCardSet(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF557A46),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32.0,
-                      vertical: 12.0,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                  ),
+    // Define colors based on the theme
+    final bool isDark = widget.darkMode;
+    final Color containerColor = isDark
+        ? const Color(0xFF1E1E1E)
+        : const Color(0xFFD9D9D9);
+    final Color textColor = isDark ? Colors.white70 : Colors.black87;
+    final Color hintColor = isDark ? Colors.white38 : Colors.black38;
+    final Color textFieldFillColor = isDark
+        ? const Color(0xFF2C2C2C)
+        : Colors.white;
+    final Color borderColor = isDark ? Colors.white54 : Colors.black54;
 
-                  child: const Text('Create'),
-                ),
-              ],
+    // The main Scaffold is in home.dart, so we only return the body content here.
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: SizedBox(
+        width: double.infinity, // This line is crucial for expansion
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.center, // This line centers the children
+          children: [
+            Container(
+              width: 300,
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: containerColor,
+                borderRadius: BorderRadius.circular(12.0),
+                border: Border.all(color: borderColor, width: 1.0),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Card set name',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.0,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  TextField(
+                    controller: _cardSetNameController,
+                    style: TextStyle(
+                      color: textColor,
+                    ), // Set text color for input
+                    decoration: InputDecoration(
+                      hintText: 'Enter a card set name',
+                      hintStyle: TextStyle(color: hintColor, fontSize: 14.0),
+                      filled: true,
+                      fillColor: textFieldFillColor,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12.0,
+                        vertical: 10.0,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6.0),
+                        borderSide: BorderSide(color: borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6.0),
+                        borderSide: BorderSide(color: borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6.0),
+                        borderSide: const BorderSide(color: Colors.blue),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 16.0),
+            ElevatedButton(
+              onPressed: () => _createCardSet(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF557A46),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 12.0,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                ),
+              ),
+              child: const Text('Create'),
+            ),
+          ],
         ),
       ),
     );

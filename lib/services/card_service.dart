@@ -2,9 +2,11 @@ import 'package:qizme/utils/http.dart';
 
 class CardService {
   static Future<Map<String, dynamic>> createCardSet({
+    required String email,
     required String name,
   }) async {
     final responseBody = await ApiService.postRequest("api/card/createCard", {
+      "email": email,
       "title": name,
     });
 

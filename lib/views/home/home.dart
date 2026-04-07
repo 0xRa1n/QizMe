@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:qizme/views/widgets/home_widgets.dart';
+// Import home_widgets.dart with a prefix to avoid name collisions.
+import 'package:qizme/views/widgets/home_widgets.dart' as home_widgets;
 import 'package:qizme/views/widgets/menu_widgets.dart';
 import 'package:qizme/views/home/tabs/edit_account.dart';
 import 'package:qizme/views/home/tabs/add_card_set.dart';
@@ -21,6 +22,9 @@ class _QizMeState extends State<QizMe> {
   bool _isLoading = true;
   bool _showEditAccount = false;
   bool _showSettings = false;
+  // --- THEME STATE ---
+  // This is the initial value before preferences are loaded.
+  bool _darkMode = false;
 
   final AuthRepository _authRepository =
       AuthRepository(); // since the Auth Repository is a class, we have to instantiate it
@@ -39,8 +43,19 @@ class _QizMeState extends State<QizMe> {
 
     setState(() {
       _prefs = prefs;
+      // Load the saved dark mode preference, defaulting to `false` (light) if not set.
+      _darkMode = _prefs?.getBool('darkMode') ?? false;
       _isLoading = false;
     });
+  }
+
+  // --- THEME TOGGLE FUNCTION ---
+  // This function updates the theme and saves the preference.
+  Future<void> _toggleDarkMode(bool newValue) async {
+    setState(() {
+      _darkMode = newValue;
+    });
+    await _prefs?.setBool('darkMode', newValue);
   }
 
   // Method to allow child widgets to change the tab
@@ -63,6 +78,7 @@ class _QizMeState extends State<QizMe> {
   }
 
   Widget _buildHomePage() {
+    // Pass the _darkMode boolean down to the home page widgets.
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -70,12 +86,15 @@ class _QizMeState extends State<QizMe> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 25),
-            buildStreakCard(),
+            // Use the prefix to call the functions from home_widgets.dart
+            home_widgets.buildStreakCard(darkMode: _darkMode),
             const SizedBox(height: 25),
-            buildCalendarSection(),
+            home_widgets.buildCalendarSection(darkMode: _darkMode),
             const SizedBox(height: 35),
-            // Pass the changeTab method as a callback here
-            buildCreateSubjectCard(onAddCardSet: () => changeTab(1)),
+            home_widgets.buildCreateSubjectCard(
+              onAddCardSet: () => changeTab(1),
+              darkMode: _darkMode,
+            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -132,14 +151,27 @@ class _QizMeState extends State<QizMe> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text("Hello, "),
-              Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                "Hello, ",
+                style: TextStyle(
+                  color: _darkMode ? Colors.white70 : Colors.black54,
+                ),
+              ),
+              Text(
+                name,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _darkMode ? Colors.white : Colors.black,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           // this is tabs. since in our design, the bottom bar does not change, we need to use tabs to navigate between pages
           buildMenuButtons(
             context: context,
+            darkMode:
+                _darkMode, // Pass the darkMode state here (if darkmode is true, the buttons will be green, if false, they will be light)
             onAccountTap: () {
               // if the account button is tapped, show the edit account page
               setState(() {
@@ -185,17 +217,25 @@ class _QizMeState extends State<QizMe> {
     }
 
     if (_showSettings) {
+      // Pass the current theme state and the toggle function to the SettingsPage.
       return SettingsPage(
+        initialDarkMode: _darkMode,
+        onThemeChanged: _toggleDarkMode,
         onBack: (settings) async {
           // Make the callback async
           // The 'settings' object is a Map, so access its values with ['key']
           final pushNotification = settings['pushNotification'] ?? false;
-          final darkMode = settings['darkMode'] ?? false;
+          final darkModeValue = settings['darkMode'] ?? _darkMode;
+
+          // Update the theme if it changed.
+          if (darkModeValue != _darkMode) {
+            await _toggleDarkMode(darkModeValue);
+          }
 
           try {
             // Call the method on the _authRepository instance
             await _authRepository.updateUserPreferences(
-              darkMode: darkMode,
+              darkMode: darkModeValue,
               pushNotification: pushNotification,
             );
           } catch (e) {
@@ -218,6 +258,10 @@ class _QizMeState extends State<QizMe> {
 
   @override
   Widget build(BuildContext context) {
+    // get the darkMode from the preferences and set the theme accordingly. we will also show a loading screen while we are loading the preferences to avoid showing the wrong theme for a split second
+    bool darkModeFromPrefs = _prefs?.getBool('darkMode') ?? true;
+    print('Dark mode from preferences: $darkModeFromPrefs');
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(
@@ -228,21 +272,22 @@ class _QizMeState extends State<QizMe> {
 
     final pages = <Widget>[
       _buildHomePage(),
-      const AddCardSet(),
+      AddCardSet(darkMode: _darkMode), // Pass the darkMode value here
       const Center(child: Text('Library Page')),
       _buildMenuPage(),
     ];
 
     return Scaffold(
+      backgroundColor: _darkMode
+          ? const Color(0xFF121212)
+          : const Color(0xFFF8F9FA), // Conditional background
       appBar: AppBar(
+        elevation: 0,
         foregroundColor: Colors.white,
-        backgroundColor: const Color.fromARGB(155, 5, 113, 75),
+        backgroundColor: const Color.fromARGB(255, 5, 113, 75),
         centerTitle: true,
         automaticallyImplyLeading: false,
-        title:
-            (currentPageIndex == 3 &&
-                (_showEditAccount ||
-                    _showSettings)) // if the current page is the menu page and the edit account or settings page is shown, show the back button and the title
+        title: (currentPageIndex == 3 && (_showEditAccount || _showSettings))
             ? Row(
                 children: [
                   IconButton(
@@ -256,67 +301,96 @@ class _QizMeState extends State<QizMe> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    // if the current page is the edit account, show the title edit account, otherwise settings
                     _showEditAccount ? 'Edit account' : 'Settings',
                     style: const TextStyle(color: Colors.white),
                   ),
                 ],
               )
-            : buildSearchBar(), // if the current page is neither the edit account page nor the settings page, show the search bar
+            : home_widgets.buildSearchBar(darkMode: _darkMode),
       ),
-      bottomNavigationBar: NavigationBar(
-        height: 80,
-        onDestinationSelected: (int index) {
-          // when a destination is selected, update the current page index and hide the edit/settings pages if applicable
-          setState(() {
-            currentPageIndex = index;
-            if (index != 3) {
-              // if the selected menu in the bottom bar is not the menu button (index 3), hide the edit/settings pages
-              _showEditAccount = false;
-              _showSettings = false;
-            }
-          });
-        },
-        indicatorColor: Colors.green[200],
-        selectedIndex: currentPageIndex,
-        destinations: <Widget>[
-          NavigationDestination(
-            selectedIcon: IconTheme(
-              data: const IconThemeData(size: iconSize),
-              child: const Icon(Icons.home),
+      bottomNavigationBar: NavigationBarTheme(
+        data: _darkMode
+            ? NavigationBarThemeData(
+                // Dark Mode Theme
+                backgroundColor: const Color(0xFF1E1E1E),
+                indicatorColor: const Color.fromARGB(255, 45, 106, 79),
+                labelTextStyle: MaterialStateProperty.resolveWith((states) {
+                  if (states.contains(MaterialState.selected)) {
+                    return const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    );
+                  }
+                  return TextStyle(color: Colors.grey[400]);
+                }),
+                iconTheme: MaterialStateProperty.resolveWith((states) {
+                  if (states.contains(MaterialState.selected)) {
+                    return const IconThemeData(
+                      size: iconSize,
+                      color: Colors.white,
+                    );
+                  }
+                  return IconThemeData(size: iconSize, color: Colors.grey[400]);
+                }),
+              )
+            : NavigationBarThemeData(
+                // Light Mode Theme
+                backgroundColor: Colors.white,
+                indicatorColor: Colors.green[100],
+                labelTextStyle: MaterialStateProperty.resolveWith((states) {
+                  if (states.contains(MaterialState.selected)) {
+                    return const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    );
+                  }
+                  return TextStyle(color: Colors.grey[600]);
+                }),
+                iconTheme: MaterialStateProperty.resolveWith((states) {
+                  if (states.contains(MaterialState.selected)) {
+                    return const IconThemeData(
+                      size: iconSize,
+                      color: Color.fromARGB(255, 45, 106, 79),
+                    );
+                  }
+                  return IconThemeData(size: iconSize, color: Colors.grey[600]);
+                }),
+              ),
+        child: NavigationBar(
+          height: 80,
+          selectedIndex: currentPageIndex,
+          onDestinationSelected: (int index) {
+            setState(() {
+              currentPageIndex = index;
+              if (index != 3) {
+                _showEditAccount = false;
+                _showSettings = false;
+              }
+            });
+          },
+          destinations: const <Widget>[
+            NavigationDestination(
+              selectedIcon: Icon(Icons.home),
+              icon: Icon(Icons.home_outlined),
+              label: 'Home',
             ),
-            icon: IconTheme(
-              data: const IconThemeData(size: iconSize),
-              child: const Icon(Icons.home_outlined),
+            NavigationDestination(
+              selectedIcon: Icon(Icons.add_circle),
+              icon: Icon(Icons.add_circle_outline),
+              label: 'Add card set',
             ),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: IconTheme(
-              data: const IconThemeData(size: iconSize),
-              child: const Icon(Icons.add),
+            NavigationDestination(
+              selectedIcon: Icon(Icons.library_books),
+              icon: Icon(Icons.library_books_outlined),
+              label: 'Library',
             ),
-            label: 'Add card set',
-          ),
-          NavigationDestination(
-            selectedIcon: IconTheme(
-              data: const IconThemeData(size: iconSize),
-              child: const Icon(Icons.library_books),
+            NavigationDestination(
+              selectedIcon: Icon(Icons.menu_open),
+              icon: Icon(Icons.menu),
+              label: 'Menu',
             ),
-            icon: IconTheme(
-              data: const IconThemeData(size: iconSize),
-              child: const Icon(Icons.library_books_outlined),
-            ),
-            label: 'Library',
-          ),
-          NavigationDestination(
-            icon: IconTheme(
-              data: const IconThemeData(size: iconSize),
-              child: const Icon(Icons.menu),
-            ),
-            label: 'Menu',
-          ),
-        ],
+          ],
+        ),
       ),
       body: pages[currentPageIndex],
     );

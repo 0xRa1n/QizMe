@@ -4,7 +4,7 @@ import 'package:qizme/services/auth_service.dart';
 class AuthRepository {
   Future<void> login({required String email, required String password}) async {
     final result = await AuthService.login(email: email, password: password);
-    final jsonMap = result;
+    final jsonMap = result['raw'] ?? {};
 
     final userData = jsonMap['data'] ?? {};
     final userPrefs = userData['userPreference'] ?? {};
@@ -14,7 +14,10 @@ class AuthRepository {
     await Future.wait([
       prefs.setString("email", email),
       prefs.setString("name", userData['name'] ?? ""),
-      prefs.setBool("pushNotification", userPrefs['pushNotification'] ?? false),
+      prefs.setBool(
+        "pushNotification",
+        userPrefs['pushNotifications'] ?? false,
+      ),
       prefs.setBool("darkMode", userPrefs['darkMode'] ?? false),
       prefs.setString("profilePicture", userData['profilePicture'] ?? ""),
     ]);
