@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qizme/services/card_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // Import home_widgets.dart with a prefix to avoid name collisions.
 import 'package:qizme/views/widgets/home_widgets.dart' as home_widgets;
@@ -28,6 +29,12 @@ class _QizMeState extends State<QizMe> {
   bool _showCreateFlashcard = false;
   Map<String, dynamic>? _flashcardToEdit;
   Map<String, dynamic>? _selectedSubject;
+
+  bool _showEditCardSetName = false;
+  bool _showEditFlashcard = false;
+  Map<String, dynamic>? _editingCardSet;
+  List<Map<String, dynamic>> _editingFlashcards = [];
+  int _currentFlashcardIndex = 0;
   // --- THEME STATE ---
   // This is the initial value before preferences are loaded.
   bool _darkMode = false;
@@ -115,6 +122,227 @@ class _QizMeState extends State<QizMe> {
               onAddCardSet: () => changeTab(1),
               darkMode: _darkMode,
               onSubjectTap: _selectSubject,
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<String?> getEmailFromPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('email');
+  }
+
+  List<Map<String, dynamic>> _getSampleCardSets() {
+    return [
+      {'title': 'Sample Set: Flutter Basics', 'progress': 25, 'flashcards': []},
+      {
+        'title': 'Sample Set: Dart Programming',
+        'progress': 75,
+        'flashcards': [],
+      },
+    ];
+  }
+
+  Widget _buildLibraryPage() {
+    final emailFuture = getEmailFromPreferences();
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 25),
+            const Text(
+              'Library',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 25),
+            FutureBuilder<String?>(
+              future: emailFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Text('Error fetching user data: ${snapshot.error}');
+                } else {
+                  return FutureBuilder<Map<String, dynamic>>(
+                    future: CardService.getCardSet(email: snapshot.data ?? ""),
+                    builder: (context, cardSnapshot) {
+                      if (cardSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (cardSnapshot.hasError) {
+                        return Text(
+                          'Error loading card sets: ${cardSnapshot.error}',
+                        );
+                      } else {
+                        final cards = cardSnapshot.data?['raw'] as List? ?? [];
+
+                        // Add sample data if no cards exist
+                        final displayCards = cards.isEmpty
+                            ? _getSampleCardSets()
+                            : cards;
+
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: displayCards.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final card = displayCards[index];
+                            return InkWell(
+                              onTap: () =>
+                                  _selectSubject(card as Map<String, dynamic>),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.black54,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Header row with title and kebab menu
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            card['title'] ?? 'No Title',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                        PopupMenuButton<String>(
+                                          onSelected: (value) {
+                                            if (value == 'edit_name') {
+                                              setState(() {
+                                                _showEditCardSetName = true;
+                                                _editingCardSet = card;
+                                              });
+                                            } else if (value ==
+                                                'edit_flashcards') {
+                                              setState(() {
+                                                _showEditFlashcard = true;
+                                                _editingCardSet = card;
+                                                _editingFlashcards =
+                                                    List<
+                                                      Map<String, dynamic>
+                                                    >.from(
+                                                      card['flashcards'] ?? [],
+                                                    );
+                                                if (_editingFlashcards
+                                                    .isEmpty) {
+                                                  _editingFlashcards.add({
+                                                    'question': '',
+                                                    'answer': '',
+                                                  });
+                                                }
+                                                _currentFlashcardIndex = 0;
+                                              });
+                                            }
+                                          },
+                                          itemBuilder: (BuildContext context) =>
+                                              [
+                                                const PopupMenuItem<String>(
+                                                  value: 'edit_name',
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.edit,
+                                                        size: 20,
+                                                      ),
+                                                      SizedBox(width: 8),
+                                                      Text(
+                                                        'Edit Card Set Name',
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const PopupMenuItem<String>(
+                                                  value: 'edit_flashcards',
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.library_books,
+                                                        size: 20,
+                                                      ),
+                                                      SizedBox(width: 8),
+                                                      Text('Edit Flashcards'),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                          icon: const Icon(
+                                            Icons.more_horiz,
+                                          ), // Horizontal kebab menu
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Progress percentage text
+                                    Text(
+                                      '${card['progress'] ?? 0}% Completed',
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Progress bar
+                                    Container(
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[400],
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: Colors.black,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: FractionallySizedBox(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor:
+                                            (card['progress'] ?? 0) / 100.0,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color:
+                                                (card['progress'] ?? 0) == 100
+                                                ? Colors
+                                                      .amber[600] // Gold color for 100%
+                                                : Colors
+                                                      .green, // Green for in progress
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }
+                    },
+                  );
+                }
+              },
             ),
             const SizedBox(height: 20),
           ],
@@ -294,7 +522,7 @@ class _QizMeState extends State<QizMe> {
     final pages = <Widget>[
       _buildHomePage(),
       AddCardSet(darkMode: _darkMode), // Pass the darkMode value here
-      _buildHomePage(), // Placeholder for Library, will show home
+      _buildLibraryPage(),
       _buildMenuPage(),
     ];
 
