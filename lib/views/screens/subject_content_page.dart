@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qizme/services/card_service.dart';
+import 'package:qizme/views/screens/study_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SubjectContentPage extends StatefulWidget {
@@ -139,7 +140,21 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
                   ),
                 ),
                 onPressed: () {
-                  // TODO: Implement study now functionality
+                  if (flashcards.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StudyPage(
+                          flashcards: flashcards,
+                          subjectTitle: widget.subject['title'] ?? 'Study',
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No flashcards to study!')),
+                    );
+                  }
                 },
                 child: const Text(
                   'Study now',

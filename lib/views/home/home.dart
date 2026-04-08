@@ -553,6 +553,11 @@ class _QizMeState extends State<QizMe> {
             }
           });
         },
+        onDone: () {
+          setState(() {
+            _showCreateFlashcard = false;
+          });
+        },
       ); // Placeholder for Create Flashcard view
     } else if (_selectedSubject != null) {
       body = SubjectContentPage(

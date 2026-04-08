@@ -5,12 +5,14 @@ class CreateFlashcardPage extends StatefulWidget {
   final bool darkMode;
   final String cardId;
   final void Function(Map<String, dynamic>)? onFlashcardAdded;
+  final VoidCallback? onDone;
 
   const CreateFlashcardPage({
     Key? key,
     required this.darkMode,
     required this.cardId,
     this.onFlashcardAdded,
+    this.onDone,
   }) : super(key: key);
 
   @override
@@ -175,7 +177,9 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  // TODO: Implement done functionality
+                  if (widget.onDone != null) {
+                    widget.onDone!();
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   foregroundColor: textColor,
