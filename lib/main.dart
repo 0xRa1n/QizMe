@@ -16,8 +16,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
         fontFamily: 'AlbertSans', // Set the default font family here
+        brightness: Brightness.light,
         textTheme: const TextTheme(
-          bodyMedium: TextStyle(fontFamily: 'AlbertSans'),
+          bodyMedium: TextStyle(fontFamily: 'AlbertSans', color: Colors.black),
         ),
         textSelectionTheme: TextSelectionThemeData(
           cursorColor:
@@ -28,6 +29,21 @@ class MyApp extends StatelessWidget {
               .green, // sets the selection handle (line with green at the bottom) to green
         ),
       ),
+      darkTheme: ThemeData(
+        primarySwatch: Colors.green,
+        fontFamily: 'AlbertSans',
+        brightness: Brightness.dark,
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(fontFamily: 'AlbertSans', color: Colors.white),
+        ),
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: Colors.white,
+          selectionColor: Colors.grey[700],
+          selectionHandleColor: Colors.green,
+        ),
+      ),
+      themeMode:
+          ThemeMode.system, // Automatically switch based on system settings
       home: SplashScreen(),
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(

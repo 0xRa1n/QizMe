@@ -8,6 +8,9 @@ import 'package:qizme/views/home/tabs/add_card_set.dart';
 import 'package:qizme/views/home/tabs/settings.dart';
 // Add this import at the top of your file
 import 'package:qizme/repositories/auth_repository.dart';
+import 'package:qizme/views/screens/create_flashcard_page.dart';
+import 'package:qizme/views/screens/edit_flashcard_page.dart';
+import 'package:qizme/views/screens/subject_content_page.dart';
 
 class QizMe extends StatefulWidget {
   const QizMe({super.key});
@@ -22,6 +25,9 @@ class _QizMeState extends State<QizMe> {
   bool _isLoading = true;
   bool _showEditAccount = false;
   bool _showSettings = false;
+  bool _showCreateFlashcard = false;
+  Map<String, dynamic>? _flashcardToEdit;
+  Map<String, dynamic>? _selectedSubject;
   // --- THEME STATE ---
   // This is the initial value before preferences are loaded.
   bool _darkMode = false;
@@ -69,6 +75,20 @@ class _QizMeState extends State<QizMe> {
     });
   }
 
+  void _selectSubject(Map<String, dynamic> subject) {
+    setState(() {
+      _selectedSubject = subject;
+    });
+  }
+
+  void _unselectSubject() {
+    setState(() {
+      _selectedSubject = null;
+      _showCreateFlashcard = false;
+      _flashcardToEdit = null;
+    });
+  }
+
   Future<void> _refreshUserData() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -94,6 +114,7 @@ class _QizMeState extends State<QizMe> {
             home_widgets.buildCreateSubjectCard(
               onAddCardSet: () => changeTab(1),
               darkMode: _darkMode,
+              onSubjectTap: _selectSubject,
             ),
             const SizedBox(height: 20),
           ],
@@ -273,9 +294,50 @@ class _QizMeState extends State<QizMe> {
     final pages = <Widget>[
       _buildHomePage(),
       AddCardSet(darkMode: _darkMode), // Pass the darkMode value here
-      const Center(child: Text('Library Page')),
+      _buildHomePage(), // Placeholder for Library, will show home
       _buildMenuPage(),
     ];
+
+    Widget? body;
+    if (_flashcardToEdit != null && _selectedSubject != null) {
+      body = EditFlashcardPage(
+        darkMode: _darkMode,
+        flashcard: _flashcardToEdit!,
+        cardId: _selectedSubject!['_id'] as String,
+        onDone: () {
+          setState(() {
+            _flashcardToEdit = null;
+          });
+        },
+      );
+    } else if (_showCreateFlashcard && _selectedSubject != null) {
+      body = CreateFlashcardPage(
+        darkMode: _darkMode,
+        cardId: _selectedSubject!['_id'] as String,
+        onFlashcardAdded: (newCard) {
+          setState(() {
+            if (_selectedSubject != null) {
+              final flashcards = List<dynamic>.from(
+                _selectedSubject!['flashcards'] ?? [],
+              );
+              flashcards.add(newCard);
+              _selectedSubject!['flashcards'] = flashcards;
+            }
+          });
+        },
+      ); // Placeholder for Create Flashcard view
+    } else if (_selectedSubject != null) {
+      body = SubjectContentPage(
+        subject: _selectedSubject!,
+        onEditFlashcard: (flashcard) {
+          setState(() {
+            _flashcardToEdit = flashcard;
+          });
+        },
+      );
+    } else {
+      body = pages[currentPageIndex];
+    }
 
     return Scaffold(
       backgroundColor: _darkMode
@@ -287,7 +349,54 @@ class _QizMeState extends State<QizMe> {
         backgroundColor: const Color.fromARGB(255, 5, 113, 75),
         centerTitle: true,
         automaticallyImplyLeading: false,
-        title: (currentPageIndex == 3 && (_showEditAccount || _showSettings))
+        title: (_flashcardToEdit != null)
+            ? Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        _flashcardToEdit = null;
+                      });
+                    },
+                  ),
+                  const Text(
+                    'Edit Flashcard',
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                ],
+              )
+            : (_showCreateFlashcard)
+            ? Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        _showCreateFlashcard = false;
+                      });
+                    },
+                  ),
+                  const Text(
+                    'Create Flashcard',
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                ],
+              )
+            : (_selectedSubject != null)
+            ? Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: _unselectSubject,
+                  ),
+                  Text(
+                    _selectedSubject!['title'] ?? 'Subject',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ],
+              )
+            : (currentPageIndex == 3 && (_showEditAccount || _showSettings))
             ? Row(
                 children: [
                   IconButton(
@@ -307,6 +416,21 @@ class _QizMeState extends State<QizMe> {
                 ],
               )
             : home_widgets.buildSearchBar(darkMode: _darkMode),
+        actions:
+            (_selectedSubject != null &&
+                !_showCreateFlashcard &&
+                _flashcardToEdit == null)
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  onPressed: () {
+                    setState(() {
+                      _showCreateFlashcard = true;
+                    });
+                  },
+                ),
+              ]
+            : null,
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: _darkMode
@@ -361,6 +485,9 @@ class _QizMeState extends State<QizMe> {
           selectedIndex: currentPageIndex,
           onDestinationSelected: (int index) {
             setState(() {
+              _selectedSubject = null;
+              _showCreateFlashcard = false;
+              _flashcardToEdit = null;
               currentPageIndex = index;
               if (index != 3) {
                 _showEditAccount = false;
@@ -392,7 +519,7 @@ class _QizMeState extends State<QizMe> {
           ],
         ),
       ),
-      body: pages[currentPageIndex],
+      body: body,
     );
   }
 }

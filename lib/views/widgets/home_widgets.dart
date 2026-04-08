@@ -120,6 +120,7 @@ Widget buildCalendarSection({required bool darkMode}) {
 Widget buildCreateSubjectCard({
   required VoidCallback onAddCardSet,
   required bool darkMode,
+  required Function(Map<String, dynamic>) onSubjectTap,
 }) {
   final emailFuture = getEmailFromPreferences();
 
@@ -211,13 +212,10 @@ Widget buildCreateSubjectCard({
                         const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final card = cards[index];
-                      final progress =
-                          (card['cardCompletionPercentage'] as num? ?? 0.0) /
-                          100.0;
                       return SubjectProgressCard(
-                        subjectName: card['title'] ?? 'No Title',
-                        progress: progress,
+                        subject: card,
                         darkMode: darkMode,
+                        onTap: () => onSubjectTap(card),
                       );
                     },
                   );
@@ -232,15 +230,15 @@ Widget buildCreateSubjectCard({
 }
 
 class SubjectProgressCard extends StatefulWidget {
-  final String subjectName;
-  final double progress;
+  final Map<String, dynamic> subject;
   final bool darkMode;
+  final VoidCallback onTap;
 
   const SubjectProgressCard({
     super.key,
-    required this.subjectName,
-    required this.progress,
+    required this.subject,
     required this.darkMode,
+    required this.onTap,
   });
 
   @override
@@ -251,17 +249,20 @@ class _SubjectProgressCardState extends State<SubjectProgressCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  late double _progress;
 
   @override
   void initState() {
     super.initState();
+    _progress =
+        (widget.subject['cardCompletionPercentage'] as num? ?? 0.0) / 100.0;
     _controller = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     _animation = Tween<double>(
       begin: 0.0,
-      end: widget.progress,
+      end: _progress,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.forward();
   }
@@ -269,11 +270,14 @@ class _SubjectProgressCardState extends State<SubjectProgressCard>
   @override
   void didUpdateWidget(SubjectProgressCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.progress != oldWidget.progress) {
+    final newProgress =
+        (widget.subject['cardCompletionPercentage'] as num? ?? 0.0) / 100.0;
+    if (newProgress != _progress) {
       _animation = Tween<double>(
-        begin: oldWidget.progress,
-        end: widget.progress,
+        begin: _progress,
+        end: newProgress,
       ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+      _progress = newProgress;
       _controller
         ..reset()
         ..forward();
@@ -294,79 +298,86 @@ class _SubjectProgressCardState extends State<SubjectProgressCard>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: widget.darkMode ? const Color(0xFF1E1E1E) : Colors.grey[300],
-        borderRadius: BorderRadius.circular(16),
-        border: widget.darkMode
-            ? null
-            : Border.all(color: Colors.black54, width: 1),
-        boxShadow: widget.darkMode
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.subjectName,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: widget.darkMode ? Colors.white : Colors.black,
-                ),
-              ),
-              Text(
-                '${(widget.progress * 100).toInt()}% Completed',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: widget.darkMode
-                      ? Colors.white.withOpacity(0.6)
-                      : Colors.black54,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              return Container(
-                height: 12,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: widget.darkMode
-                      ? Colors.black.withOpacity(0.3)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: widget.darkMode
-                      ? null
-                      : Border.all(color: Colors.grey.shade400),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: _animation.value,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _getProgressColor(_animation.value),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
+    final subjectName = widget.subject['title'] ?? 'No Title';
+    final progress =
+        (widget.subject['cardCompletionPercentage'] as num? ?? 0.0) / 100.0;
+
+    return InkWell(
+      onTap: widget.onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: widget.darkMode ? const Color(0xFF1E1E1E) : Colors.grey[300],
+          borderRadius: BorderRadius.circular(16),
+          border: widget.darkMode
+              ? null
+              : Border.all(color: Colors.black54, width: 1),
+          boxShadow: widget.darkMode
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  subjectName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: widget.darkMode ? Colors.white : Colors.black,
                   ),
                 ),
-              );
-            },
-          ),
-        ],
+                Text(
+                  '${(progress * 100).toInt()}% Completed',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: widget.darkMode
+                        ? Colors.white.withOpacity(0.6)
+                        : Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                return Container(
+                  height: 12,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: widget.darkMode
+                        ? Colors.black.withOpacity(0.3)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: widget.darkMode
+                        ? null
+                        : Border.all(color: Colors.grey.shade400),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: _animation.value,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _getProgressColor(_animation.value),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

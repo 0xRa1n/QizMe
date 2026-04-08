@@ -139,6 +139,33 @@ class ApiService {
     }
   }
 
+  // Generic DELETE request function
+  static Future<dynamic> deleteRequest(
+    String endpoint,
+    Map<String, dynamic> body,
+  ) async {
+    final url = Uri.parse('$baseUrl/$endpoint');
+
+    try {
+      final response = await http.delete(
+        url,
+        headers: _getHeaders(),
+        body: jsonEncode(body), // Convert Dart Map to JSON string
+      );
+
+      return _processResponse(response);
+    } on ApiException {
+      // Re-throw the ApiException so it can be caught by the UI layer
+      rethrow;
+    } catch (e) {
+      // print('POST Request Error: $e');
+      // Catch other exceptions (like SocketException for no network) and wrap them
+      throw Exception(
+        'Network Error: Please check your connection and try again.',
+      );
+    }
+  }
+
   // Centralized response processor to evaluate the HTTP status code
   static dynamic _processResponse(http.Response response) {
     final statusCode = response.statusCode;
