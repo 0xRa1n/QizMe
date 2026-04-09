@@ -9,10 +9,15 @@ import 'package:qizme/services/auth_service.dart';
 
 // New StatefulWidget for the dialog content
 class _EditDialogContent extends StatefulWidget {
+  final String title;
   final List<String> fieldLabels;
   final Function(List<String> values) onSave;
 
-  const _EditDialogContent({required this.fieldLabels, required this.onSave});
+  const _EditDialogContent({
+    required this.title,
+    required this.fieldLabels,
+    required this.onSave,
+  });
 
   @override
   __EditDialogContentState createState() => __EditDialogContentState();
@@ -40,9 +45,7 @@ class __EditDialogContentState extends State<_EditDialogContent> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-        'Edit ${widget.fieldLabels.length > 1 ? "Name" : widget.fieldLabels.first}',
-      ),
+      title: Text(widget.title),
       content: SingleChildScrollView(
         child: ListBody(
           children: List.generate(widget.fieldLabels.length, (index) {
@@ -127,14 +130,16 @@ class _EditAccountPageState extends State<EditAccountPage> {
         _selectedImage = pickedFile;
       });
 
-      final response = await ApiService.postFileRequest(
+      // The ApiService.postFileRequest likely returns a Map already.
+      // We will treat 'response' as a Map.
+      final Map<String, dynamic> response = await ApiService.postFileRequest(
         'api/users/profile/updatePicture',
-        {'email': 'unvlzx.c@gmail.com'},
+        {'email': _prefs?.getString('email') ?? ''},
         pickedFile.path,
       );
 
-      final jsonMap = jsonDecode(response);
-      final newPath = jsonMap['data']?['imageUrl'];
+      // No need to call jsonDecode. Access the map directly.
+      final newPath = response['data']?['imageUrl'];
 
       if (newPath == null || newPath.toString().isEmpty) {
         throw Exception('Server returned empty image path');
@@ -151,9 +156,10 @@ class _EditAccountPageState extends State<EditAccountPage> {
       ).showSnackBar(const SnackBar(content: Text('Profile picture updated')));
     } catch (e) {
       if (!mounted) return;
+      // The 'e' might be an object, so we convert it to a string for display.
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      ).showSnackBar(SnackBar(content: Text('Upload failed: ${e.toString()}')));
     }
   }
 
@@ -181,6 +187,7 @@ class _EditAccountPageState extends State<EditAccountPage> {
   }
 
   Future<void> _showEditDialog({
+    required String title,
     required List<String> fieldLabels,
     required Function(List<String> values) onSave,
   }) async {
@@ -188,9 +195,20 @@ class _EditAccountPageState extends State<EditAccountPage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return _EditDialogContent(fieldLabels: fieldLabels, onSave: onSave);
+        return _EditDialogContent(
+          title: title,
+          fieldLabels: fieldLabels,
+          onSave: onSave,
+        );
       },
     );
+  }
+
+  void _handleError(dynamic e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
   }
 
   @override
@@ -240,28 +258,26 @@ class _EditAccountPageState extends State<EditAccountPage> {
             label: 'Name',
             onTap: () {
               _showEditDialog(
+                title: 'Edit Name',
                 fieldLabels: ['First Name', 'Last Name'],
-                onSave: (values) {
-                  print('Saving Name: ${values[0]} ${values[1]}');
+                onSave: (values) async {
                   try {
-                    SharedPreferences.getInstance().then((prefs) {
-                      final email = prefs.getString('email') ?? '';
-                      AuthService.updateName(
-                        email: email,
-                        newName: '${values[0]} ${values[1]}',
-                      ).then((_) {
-                        // update the name in the shared preferences
-                        prefs.setString('name', '${values[0]} ${values[1]}');
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Name updated')),
-                        );
-                      });
-                    });
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Failed to update name')),
+                    final newName = '${values[0]} ${values[1]}';
+                    final email = _prefs?.getString('email') ?? '';
+                    await AuthService.updateName(
+                      email: email,
+                      newName: newName,
                     );
+                    await _prefs?.setString('name', newName);
+                    await widget.onProfileUpdated();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Name updated successfully'),
+                      ),
+                    );
+                  } catch (e) {
+                    _handleError(e);
                   }
                 },
               );
@@ -272,29 +288,26 @@ class _EditAccountPageState extends State<EditAccountPage> {
             label: 'Username',
             onTap: () {
               _showEditDialog(
+                title: 'Edit Username',
                 fieldLabels: ['Username'],
-                onSave: (values) {
+                onSave: (values) async {
                   try {
-                    SharedPreferences.getInstance().then((prefs) {
-                      final email = prefs.getString('email') ?? '';
-                      AuthService.updateUsername(
-                        email: email,
-                        newUsername: values[0],
-                      ).then((_) {
-                        // update the name in the shared preferences
-                        prefs.setString('username', values[0]);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Username updated')),
-                        );
-                      });
-                    });
-                  } catch (e) {
+                    final newUsername = values[0];
+                    final email = _prefs?.getString('email') ?? '';
+                    await AuthService.updateUsername(
+                      email: email,
+                      newUsername: newUsername,
+                    );
+                    await _prefs?.setString('username', newUsername);
+                    await widget.onProfileUpdated();
+                    if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Failed to update username'),
+                        content: Text('Username updated successfully'),
                       ),
                     );
+                  } catch (e) {
+                    _handleError(e);
                   }
                 },
               );
@@ -305,27 +318,26 @@ class _EditAccountPageState extends State<EditAccountPage> {
             label: 'Email',
             onTap: () {
               _showEditDialog(
+                title: 'Edit Email',
                 fieldLabels: ['Email'],
-                onSave: (values) {
+                onSave: (values) async {
                   try {
-                    SharedPreferences.getInstance().then((prefs) {
-                      final email = prefs.getString('email') ?? '';
-                      AuthService.updateEmail(
-                        email: email,
-                        newEmail: values[0],
-                      ).then((_) {
-                        // update the name in the shared preferences
-                        prefs.setString('email', values[0]);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Email updated')),
-                        );
-                      });
-                    });
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Failed to update email')),
+                    final newEmail = values[0];
+                    final email = _prefs?.getString('email') ?? '';
+                    await AuthService.updateEmail(
+                      email: email,
+                      newEmail: newEmail,
                     );
+                    await _prefs?.setString('email', newEmail);
+                    await widget.onProfileUpdated();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Email updated successfully'),
+                      ),
+                    );
+                  } catch (e) {
+                    _handleError(e);
                   }
                 },
               );
@@ -336,27 +348,24 @@ class _EditAccountPageState extends State<EditAccountPage> {
             label: 'Password',
             onTap: () {
               _showEditDialog(
+                title: 'Change Password',
                 fieldLabels: ['Current Password', 'New Password'],
-                onSave: (values) {
+                onSave: (values) async {
                   try {
-                    SharedPreferences.getInstance().then((prefs) {
-                      final email = prefs.getString('email') ?? '';
-                      AuthService.updatePassword(
-                        email: email,
-                        currentPassword: values[0],
-                        newPassword: values[1],
-                      ).then((_) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Password updated')),
-                        );
-                      });
-                    });
-                  } catch (e) {
+                    final email = _prefs?.getString('email') ?? '';
+                    await AuthService.updatePassword(
+                      email: email,
+                      currentPassword: values[0],
+                      newPassword: values[1],
+                    );
+                    if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Failed to update password'),
+                        content: Text('Password updated successfully'),
                       ),
                     );
+                  } catch (e) {
+                    _handleError(e);
                   }
                 },
               );
