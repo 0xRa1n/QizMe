@@ -121,7 +121,7 @@ class _QizMeState extends State<QizMe> {
             const SizedBox(height: 24),
             home_widgets.buildStreakCard(
               darkMode: _darkMode,
-              streak: _currentStreak,
+              userId: _prefs?.getString('id') ?? '',
             ),
             const SizedBox(height: 24),
             home_widgets.buildCalendarSection(darkMode: _darkMode),

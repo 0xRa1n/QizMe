@@ -15,4 +15,11 @@ class StreakService {
     );
     return {'raw': responseBody};
   }
+
+  static Future<Map<String, dynamic>> getStreakCount(String userId) async {
+    final responseBody = await ApiService.getRequest(
+      'api/users/streak/$userId',
+    );
+    return {'raw': responseBody};
+  }
 }

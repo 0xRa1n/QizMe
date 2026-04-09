@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qizme/services/card_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qizme/services/streak_service.dart';
 
 // NOTE: The duplicate SettingsPage class has been removed from this file.
 
@@ -35,37 +36,87 @@ Widget buildSearchBar({required bool darkMode}) {
   );
 }
 
-Widget buildStreakCard({required bool darkMode, required int streak}) {
-  final String streakText;
-  if (streak > 0) {
-    streakText = '$streak-day Streak!';
-  } else {
-    streakText = 'Earn a Streak!';
-  }
+Widget buildStreakCard({required bool darkMode, required String userId}) {
+  // The Future is now passed directly to the FutureBuilder
+  return FutureBuilder<Map<String, dynamic>>(
+    future: StreakService.getStreakCount(userId),
+    builder: (context, snapshot) {
+      String streakText;
+      Widget streakContent;
 
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(vertical: 16),
-    decoration: BoxDecoration(
-      color: darkMode ? const Color(0xFF1E1E1E) : const Color(0xFFE0E0E0),
-      borderRadius: BorderRadius.circular(16),
-      border: darkMode ? null : Border.all(color: Colors.black, width: 1.2),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text('🔥', style: TextStyle(fontSize: 24)),
-        const SizedBox(width: 10),
-        Text(
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        // While the Future is loading, show a loading indicator
+        streakContent = const SizedBox(
+          height: 28, // Maintain height to avoid layout shifts
+          width: 28,
+          child: CircularProgressIndicator(
+            strokeWidth: 3,
+            color: Colors.orange,
+          ),
+        );
+      } else if (snapshot.hasError) {
+        // If an error occurs, display an error message
+        streakText = 'Error';
+        streakContent = Text(
           streakText,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: darkMode ? Colors.white : Colors.black,
           ),
+        );
+      } else if (snapshot.hasData) {
+        // When the Future completes successfully, parse the data
+        final streakData = snapshot.data!;
+        final streakCount = (streakData['raw']['data']['currentStreak'] as num)
+            .toInt();
+
+        if (streakCount > 0) {
+          streakText = '$streakCount-day Streak!';
+        } else {
+          streakText = 'Earn a Streak!';
+        }
+        streakContent = Text(
+          streakText,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: darkMode ? Colors.white : Colors.black,
+          ),
+        );
+      } else {
+        // Fallback for an unlikely state (no data, no error)
+        streakText = 'Earn a Streak!';
+        streakContent = Text(
+          streakText,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: darkMode ? Colors.white : Colors.black,
+          ),
+        );
+      }
+
+      // This is the main container that will be returned in all cases
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: darkMode ? const Color(0xFF1E1E1E) : const Color(0xFFE0E0E0),
+          borderRadius: BorderRadius.circular(16),
+          border: darkMode ? null : Border.all(color: Colors.black, width: 1.2),
         ),
-      ],
-    ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('🔥', style: TextStyle(fontSize: 24)),
+            const SizedBox(width: 10),
+            // The content (loading indicator or text) is placed here
+            streakContent,
+          ],
+        ),
+      );
+    },
   );
 }
 
