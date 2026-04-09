@@ -78,4 +78,57 @@ class AuthService {
 
     return responseBody;
   }
+
+  static Future<Map<String, dynamic>> updateEmail({
+    required String email,
+    required String newEmail,
+  }) async {
+    final responseBody = await ApiService.putRequest(
+      "api/users/profile/updateEmail",
+      {"email": email, "newEmail": newEmail},
+    );
+
+    return responseBody;
+  }
+
+  static Future<Map<String, dynamic>> updateName({
+    required String email,
+    required String newName,
+  }) async {
+    final responseBody = await ApiService.putRequest(
+      "api/users/profile/updateName",
+      {"email": email, "newName": newName},
+    );
+
+    return responseBody;
+  }
+
+  static Future<Map<String, dynamic>> updateUsername({
+    required String email,
+    required String newUsername,
+  }) async {
+    final responseBody = await ApiService.putRequest(
+      "api/users/profile/updateUsername",
+      {"email": email, "newUsername": newUsername},
+    );
+
+    return responseBody;
+  }
+
+  static Future<Map<String, dynamic>> updatePassword({
+    required String email,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final responseBody = await ApiService.putRequest(
+      "api/users/profile/updatePassword",
+      {
+        "email": email,
+        "currentPassword": currentPassword,
+        "newPassword": newPassword,
+      },
+    );
+
+    return responseBody;
+  }
 }
