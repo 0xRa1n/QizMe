@@ -22,4 +22,11 @@ class StreakService {
     );
     return {'raw': responseBody};
   }
+
+  static Future<Map<String, dynamic>> getStreakHistory(String userId) async {
+    final responseBody = await ApiService.getRequest(
+      'api/users/reviewHistory/$userId',
+    );
+    return {'raw': responseBody};
+  }
 }

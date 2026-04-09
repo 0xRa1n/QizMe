@@ -120,39 +120,116 @@ Widget buildStreakCard({required bool darkMode, required String userId}) {
   );
 }
 
-Widget buildCalendarGrid({required bool darkMode}) {
+Widget buildCalendarGrid({required bool darkMode, required String userId}) {
   final now = DateTime.now();
   final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
 
-  return GridView.count(
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    crossAxisCount: 7,
-    mainAxisSpacing: 8,
-    crossAxisSpacing: 8,
-    children: List.generate(daysInMonth, (index) {
-      final day = index + 1;
-      final isToday = day == now.day;
-      return Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isToday
-              ? const Color.fromARGB(255, 45, 106, 79)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          '$day',
-          style: TextStyle(
-            color: isToday
-                ? Colors.white
-                : (darkMode ? Colors.white.withOpacity(0.6) : Colors.black54),
-            fontSize: 12,
-            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
+  return FutureBuilder<Map<String, dynamic>>(
+    future: StreakService.getReviewHistory(userId),
+    builder: (context, snapshot) {
+      // While loading, show a placeholder grid or a loading indicator
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 7,
+          children: List.generate(
+            daysInMonth,
+            (index) => const SizedBox(),
+          ), // Placeholder
+        );
+      }
+
+      // If there's an error, you could show an error message
+      if (snapshot.hasError) {
+        return const Center(child: Text('Could not load history'));
+      }
+
+      // Once data is loaded, parse the active dates
+      Set<int> activeDays = {};
+      if (snapshot.hasData) {
+        try {
+          final List<dynamic> activeDatesList =
+              snapshot.data?['raw']?['data']?['activeDates'] ?? [];
+          activeDays = activeDatesList
+              .map((dateStr) {
+                // Add a type check for safety
+                if (dateStr is String) {
+                  // DateTime.parse handles the full ISO 8601 timestamp
+                  final date = DateTime.parse(dateStr);
+                  // Check if the date is in the current month and year before adding the day
+                  if (date.year == now.year && date.month == now.month) {
+                    return date.day;
+                  }
+                }
+                return -1; // Return an invalid day for non-strings or wrong month/year
+              })
+              .where((day) => day != -1)
+              .toSet();
+        } catch (e) {
+          print('Error parsing active dates: $e');
+          // Keep activeDays empty if parsing fails
+        }
+      }
+
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 7,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        children: List.generate(daysInMonth, (index) {
+          final day = index + 1;
+          final isToday = day == now.day;
+          final isActiveDay = activeDays.contains(day);
+
+          Color? color;
+          Color textColor;
+
+          // Updated Color Logic
+          if (isToday) {
+            color = const Color.fromARGB(
+              255,
+              45,
+              106,
+              79,
+            ); // Keep Today's color distinct
+            textColor = Colors.white;
+          } else if (isActiveDay) {
+            color = const Color.fromARGB(
+              255,
+              45,
+              106,
+              79,
+            ); // Green for active streak days
+            textColor = Colors.white;
+          } else {
+            color = Colors.transparent;
+            textColor = darkMode
+                ? Colors.white.withOpacity(0.6)
+                : Colors.black54;
+          }
+
+          return Container(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$day',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: isToday || isActiveDay
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          );
+        }),
       );
-    }),
+    },
   );
 }
 
@@ -177,7 +254,30 @@ Widget buildCalendarSection({required bool darkMode}) {
           ),
         ),
         const SizedBox(height: 15),
-        buildCalendarGrid(darkMode: darkMode),
+        // Use a FutureBuilder to get the userId from SharedPreferences
+        FutureBuilder<String?>(
+          future: SharedPreferences.getInstance().then(
+            (prefs) => prefs.getString('id'),
+          ),
+          builder: (context, snapshot) {
+            // While waiting for the userId, you can show a loading state
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            }
+
+            // If there's an error or no userId, you can handle it gracefully
+            if (snapshot.hasError ||
+                !snapshot.hasData ||
+                snapshot.data == null) {
+              return const Text('Could not load user data.');
+            }
+
+            // Once you have the userId, build the calendar grid
+            final userId = snapshot.data!;
+            print('Loaded userId for calendar: $userId');
+            return buildCalendarGrid(darkMode: darkMode, userId: userId);
+          },
+        ),
       ],
     ),
   );
