@@ -25,6 +25,7 @@ class StudyPage extends StatefulWidget {
 class _StudyPageState extends State<StudyPage> {
   int _currentIndex = 0;
   bool _isFlipped = false;
+  bool _streakAlreadyIncreasedToday = false;
 
   void _nextCard() {
     // Calculate the percentage for the card that was just completed.
@@ -179,42 +180,67 @@ class _StudyPageState extends State<StudyPage> {
                       height: 55,
                       child: ElevatedButton(
                         onPressed: () async {
-                          int finalStreakCount = 0;
                           final prefs = await SharedPreferences.getInstance();
                           final userId = prefs.getString('id');
 
-                          if (userId != null) {
-                            try {
-                              // First, tell the backend to record the review.
-                              await StreakService.recordReview(userId);
-
-                              // Then, to be absolutely sure, fetch the latest streak count from the database.
-                              final streakData =
-                                  await StreakService.getStreakCount(userId);
-                              finalStreakCount =
-                                  streakData['raw']['data']['currentStreak'] ??
-                                  0;
-                            } catch (e) {
-                              // Log the error to the console to help with debugging.
-                              print('Error updating or fetching streak: $e');
-                              // If it fails, we'll navigate with a streak of 0.
-                              finalStreakCount = 0;
-                            }
+                          if (userId == null) {
+                            print("User ID is null. Cannot proceed.");
+                            Navigator.pop(context);
+                            return;
                           }
 
-                          if (mounted) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => StreakIncreasedScreen(
-                                  streakCount: finalStreakCount,
-                                ),
-                              ),
-                            ).then((result) {
-                              if (result == true) {
-                                Navigator.pop(context, true);
+                          try {
+                            // Get the streak count *before* recording the review.
+                            final initialStreakData =
+                                await StreakService.getStreakCount(userId);
+                            print(
+                              "Initial Streak Data: ${initialStreakData['raw']}",
+                            );
+                            final initialStreak =
+                                initialStreakData['raw']['data']['currentStreak'] ??
+                                0;
+                            print("Initial Streak Count: $initialStreak");
+
+                            // Record the review.
+                            final reviewResponse =
+                                await StreakService.recordReview(userId);
+                            print("Review Response: ${reviewResponse['raw']}");
+                            final newStreak =
+                                reviewResponse['raw']['data']['currentStreak'] ??
+                                initialStreak;
+                            print("New Streak Count from Response: $newStreak");
+
+                            if (newStreak > initialStreak &&
+                                !_streakAlreadyIncreasedToday) {
+                              print("Streak increased! Showing screen.");
+                              setState(() {
+                                _streakAlreadyIncreasedToday = true;
+                              });
+                              if (mounted) {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => StreakIncreasedScreen(
+                                      streakCount: newStreak,
+                                    ),
+                                  ),
+                                );
+                                // After the streak screen is dismissed, pop the study page.
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                }
                               }
-                            });
+                            } else {
+                              print("Streak did not increase. Popping back.");
+                              if (mounted) {
+                                Navigator.pop(context);
+                              }
+                            }
+                          } catch (e) {
+                            print('CRITICAL ERROR during streak logic: $e');
+                            if (mounted) {
+                              Navigator.pop(context);
+                            }
                           }
                         },
                         style: ElevatedButton.styleFrom(

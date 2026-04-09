@@ -15,7 +15,7 @@ class StreakService {
     );
     // Assuming the response contains the updated user document or at least the new streak.
     // Let's return the whole data part of the response.
-    return responseBody['data'];
+    return {'raw': responseBody};
   }
 
   static Future<Map<String, dynamic>> updateStreakPercentage(

@@ -56,10 +56,6 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
             date.month == today.month &&
             date.day == today.day,
       );
-
-      if (!isAlreadyStudiedToday) {
-        await StreakService.recordReview(userId);
-      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
