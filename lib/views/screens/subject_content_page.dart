@@ -74,6 +74,9 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
             builder: (context) => StudyPage(
               flashcards: flashcards,
               subjectTitle: widget.subject['title'] ?? 'Study',
+              cardId: widget.subject['_id'],
+              initialCompletionPercentage:
+                  widget.subject['cardCompletionPercentage'] ?? 0,
             ),
           ),
         );

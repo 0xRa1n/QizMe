@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:qizme/views/screens/increased_streak_screen.dart';
+import 'package:qizme/services/streak_service.dart';
 
 class StudyPage extends StatefulWidget {
   final List<dynamic> flashcards;
   final String subjectTitle;
+  final String cardId;
+  final int initialCompletionPercentage;
 
   const StudyPage({
     Key? key,
     required this.flashcards,
     required this.subjectTitle,
+    required this.cardId,
+    required this.initialCompletionPercentage,
   }) : super(key: key);
 
   @override
@@ -21,6 +26,17 @@ class _StudyPageState extends State<StudyPage> {
   bool _isFlipped = false;
 
   void _nextCard() {
+    // Calculate the percentage for the card that was just completed.
+    final newPercentage = ((_currentIndex + 1) / widget.flashcards.length * 100)
+        .toInt();
+
+    // Only update if the new percentage is valid and the card is not already 100% complete.
+    if (widget.initialCompletionPercentage < 100 &&
+        _currentIndex < widget.flashcards.length) {
+      StreakService.updateStreakPercentage(widget.cardId, newPercentage);
+    }
+
+    // Then, move to the next card.
     setState(() {
       _currentIndex++;
       _isFlipped = false;

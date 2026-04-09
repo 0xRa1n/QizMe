@@ -16,6 +16,17 @@ class StreakService {
     return {'raw': responseBody};
   }
 
+  static Future<Map<String, dynamic>> updateStreakPercentage(
+    String flashcardID,
+    int newPercentage,
+  ) async {
+    final responseBody = await ApiService.putRequest(
+      'api/card/$flashcardID/updateFlashcardPercentage',
+      {'newPercentage': newPercentage},
+    );
+    return {'raw': responseBody};
+  }
+
   static Future<Map<String, dynamic>> getStreakCount(String userId) async {
     final responseBody = await ApiService.getRequest(
       'api/users/streak/$userId',
