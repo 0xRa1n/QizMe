@@ -38,6 +38,7 @@ class _QizMeState extends State<QizMe> {
   // --- THEME STATE ---
   // This is the initial value before preferences are loaded.
   bool _darkMode = false;
+  int _currentStreak = 0;
 
   final AuthRepository _authRepository =
       AuthRepository(); // since the Auth Repository is a class, we have to instantiate it
@@ -48,6 +49,14 @@ class _QizMeState extends State<QizMe> {
   void initState() {
     super.initState();
     _initializePreferences();
+    _loadStreak();
+  }
+
+  Future<void> _loadStreak() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _currentStreak = prefs.getInt('currentStreak') ?? 0;
+    });
   }
 
   Future<void> _initializePreferences() async {
@@ -97,33 +106,31 @@ class _QizMeState extends State<QizMe> {
   }
 
   Future<void> _refreshUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _prefs = prefs;
-    });
+    await _loadStreak();
   }
 
   Widget _buildHomePage() {
-    // Pass the _darkMode boolean down to the home page widgets.
-    return SafeArea(
+    return RefreshIndicator(
+      onRefresh: _refreshUserData,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 25),
-            // Use the prefix to call the functions from home_widgets.dart
-            home_widgets.buildStreakCard(darkMode: _darkMode),
-            const SizedBox(height: 25),
+            const SizedBox(height: 24),
+            home_widgets.buildStreakCard(
+              darkMode: _darkMode,
+              streak: _currentStreak,
+            ),
+            const SizedBox(height: 24),
             home_widgets.buildCalendarSection(darkMode: _darkMode),
-            const SizedBox(height: 35),
+            const SizedBox(height: 24),
             home_widgets.buildCreateSubjectCard(
-              onAddCardSet: () => changeTab(1),
+              onAddCardSet: () => setState(() => changeTab(1)),
               darkMode: _darkMode,
               onSubjectTap: _selectSubject,
             ),
-            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -135,219 +142,138 @@ class _QizMeState extends State<QizMe> {
     return prefs.getString('email');
   }
 
-  List<Map<String, dynamic>> _getSampleCardSets() {
-    return [
-      {'title': 'Sample Set: Flutter Basics', 'progress': 25, 'flashcards': []},
-      {
-        'title': 'Sample Set: Dart Programming',
-        'progress': 75,
-        'flashcards': [],
-      },
-    ];
-  }
-
   Widget _buildLibraryPage() {
-    final emailFuture = getEmailFromPreferences();
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 25),
-            const Text(
-              'Library',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Library',
+            style: TextStyle(
+              fontSize: 32, // Increased font size for emphasis
+              fontWeight: FontWeight.bold,
+              color: _darkMode ? Colors.white : Colors.black,
             ),
-            const SizedBox(height: 25),
-            FutureBuilder<String?>(
-              future: emailFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Text('Error fetching user data: ${snapshot.error}');
-                } else {
-                  return FutureBuilder<Map<String, dynamic>>(
-                    future: CardService.getCardSet(email: snapshot.data ?? ""),
-                    builder: (context, cardSnapshot) {
-                      if (cardSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      } else if (cardSnapshot.hasError) {
-                        return Text(
-                          'Error loading card sets: ${cardSnapshot.error}',
-                        );
-                      } else {
-                        final cards = cardSnapshot.data?['raw'] as List? ?? [];
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<String?>(
+            future: getEmailFromPreferences(),
+            builder: (context, emailSnapshot) {
+              if (emailSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (emailSnapshot.hasError ||
+                  !emailSnapshot.hasData ||
+                  emailSnapshot.data == null) {
+                return const Center(
+                  child: Text('Could not retrieve user data.'),
+                );
+              }
 
-                        // Add sample data if no cards exist
-                        final displayCards = cards.isEmpty
-                            ? _getSampleCardSets()
-                            : cards;
+              final email = emailSnapshot.data!;
+              return FutureBuilder<Map<String, dynamic>>(
+                future: CardService.getCardSet(email: email),
+                builder: (context, cardSnapshot) {
+                  if (cardSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (cardSnapshot.hasError) {
+                    return Center(child: Text('Error: ${cardSnapshot.error}'));
+                  }
 
-                        return ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: displayCards.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final card = displayCards[index];
-                            return InkWell(
-                              onTap: () =>
-                                  _selectSubject(card as Map<String, dynamic>),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.black54,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Header row with title and kebab menu
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            card['title'] ?? 'No Title',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        ),
-                                        PopupMenuButton<String>(
-                                          onSelected: (value) {
-                                            if (value == 'edit_name') {
-                                              setState(() {
-                                                _showEditCardSetName = true;
-                                                _editingCardSet = card;
-                                              });
-                                            } else if (value ==
-                                                'edit_flashcards') {
-                                              setState(() {
-                                                _showEditFlashcard = true;
-                                                _editingCardSet = card;
-                                                _editingFlashcards =
-                                                    List<
-                                                      Map<String, dynamic>
-                                                    >.from(
-                                                      card['flashcards'] ?? [],
-                                                    );
-                                                if (_editingFlashcards
-                                                    .isEmpty) {
-                                                  _editingFlashcards.add({
-                                                    'question': '',
-                                                    'answer': '',
-                                                  });
-                                                }
-                                                _currentFlashcardIndex = 0;
-                                              });
-                                            }
-                                          },
-                                          itemBuilder: (BuildContext context) =>
-                                              [
-                                                const PopupMenuItem<String>(
-                                                  value: 'edit_name',
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.edit,
-                                                        size: 20,
-                                                      ),
-                                                      SizedBox(width: 8),
-                                                      Text(
-                                                        'Edit Card Set Name',
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                const PopupMenuItem<String>(
-                                                  value: 'edit_flashcards',
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.library_books,
-                                                        size: 20,
-                                                      ),
-                                                      SizedBox(width: 8),
-                                                      Text('Edit Flashcards'),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                          icon: const Icon(
-                                            Icons.more_horiz,
-                                          ), // Horizontal kebab menu
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    // Progress percentage text
-                                    Text(
-                                      '${card['progress'] ?? 0}% Completed',
-                                      style: TextStyle(
-                                        color: Colors.grey[700],
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // Progress bar
-                                    Container(
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[400],
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(
-                                          color: Colors.black,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: FractionallySizedBox(
-                                        alignment: Alignment.centerLeft,
-                                        widthFactor:
-                                            (card['progress'] ?? 0) / 100.0,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color:
-                                                (card['progress'] ?? 0) == 100
-                                                ? Colors
-                                                      .amber[600] // Gold color for 100%
-                                                : Colors
-                                                      .green, // Green for in progress
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                  final cards = cardSnapshot.data?['raw'] as List? ?? [];
+
+                  if (cards.isEmpty) {
+                    // This is the new empty state UI
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.7,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              color: _darkMode
+                                  ? Colors.grey[850]
+                                  : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _darkMode
+                                    ? Colors.grey[700]!
+                                    : Colors.grey[400]!,
+                                width: 1.5,
                               ),
-                            );
-                          },
-                        );
-                      }
+                            ),
+                            child: const Text(
+                              'No decks yet! Create a card?',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: () {
+                              // This will trigger the CreateFlashcardScreen to show up
+                              setState(() => changeTab(1));
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _darkMode
+                                  ? Colors.grey[700]
+                                  : Colors.grey[300],
+                              foregroundColor: _darkMode
+                                  ? Colors.white
+                                  : Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 50,
+                                vertical: 15,
+                              ),
+                              side: BorderSide(
+                                color: _darkMode
+                                    ? Colors.grey[600]!
+                                    : Colors.grey[500]!,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Text(
+                              'Create',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // This part remains the same, for when the library is not empty
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    itemCount: cards.length,
+                    itemBuilder: (context, index) {
+                      final card = cards[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: home_widgets.SubjectProgressCard(
+                          subject: card,
+                          darkMode: _darkMode,
+                          onTap: () => _selectSubject(card),
+                        ),
+                      );
                     },
                   );
-                }
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
+                },
+              );
+            },
+          ),
         ),
-      ),
+      ],
     );
   }
 

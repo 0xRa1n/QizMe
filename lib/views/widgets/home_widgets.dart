@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:qizme/services/card_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,7 +35,14 @@ Widget buildSearchBar({required bool darkMode}) {
   );
 }
 
-Widget buildStreakCard({required bool darkMode}) {
+Widget buildStreakCard({required bool darkMode, required int streak}) {
+  final String streakText;
+  if (streak > 0) {
+    streakText = '$streak-day Streak!';
+  } else {
+    streakText = 'Earn a Streak!';
+  }
+
   return Container(
     width: double.infinity,
     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -49,7 +57,7 @@ Widget buildStreakCard({required bool darkMode}) {
         const Text('🔥', style: TextStyle(fontSize: 24)),
         const SizedBox(width: 10),
         Text(
-          'Earn a Streak!',
+          streakText,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -62,14 +70,18 @@ Widget buildStreakCard({required bool darkMode}) {
 }
 
 Widget buildCalendarGrid({required bool darkMode}) {
+  final now = DateTime.now();
+  final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+
   return GridView.count(
     shrinkWrap: true,
     physics: const NeverScrollableScrollPhysics(),
     crossAxisCount: 7,
     mainAxisSpacing: 8,
     crossAxisSpacing: 8,
-    children: List.generate(31, (index) {
-      final isToday = (index + 1) == 19;
+    children: List.generate(daysInMonth, (index) {
+      final day = index + 1;
+      final isToday = day == now.day;
       return Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -79,7 +91,7 @@ Widget buildCalendarGrid({required bool darkMode}) {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          '${index + 1}',
+          '$day',
           style: TextStyle(
             color: isToday
                 ? Colors.white
@@ -94,6 +106,9 @@ Widget buildCalendarGrid({required bool darkMode}) {
 }
 
 Widget buildCalendarSection({required bool darkMode}) {
+  final now = DateTime.now();
+  final monthYear = DateFormat('MMMM yyyy').format(now);
+
   return Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
@@ -104,7 +119,7 @@ Widget buildCalendarSection({required bool darkMode}) {
     child: Column(
       children: [
         Text(
-          "March 2026",
+          monthYear,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: darkMode ? Colors.white : Colors.black,

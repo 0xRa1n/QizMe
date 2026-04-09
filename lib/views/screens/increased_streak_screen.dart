@@ -72,10 +72,8 @@ class StreakIncreasedScreen extends StatelessWidget {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Pop StreakIncreasedScreen and StudyPage to return to Subject Content
-                    Navigator.of(context)
-                      ..pop()
-                      ..pop();
+                    int count = 0;
+                    Navigator.of(context).popUntil((_) => count++ >= 2);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kPrimaryGreen,

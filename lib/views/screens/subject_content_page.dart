@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qizme/services/card_service.dart';
+import 'package:qizme/services/streak_service.dart';
 import 'package:qizme/views/screens/study_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,6 +30,63 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
   Future<bool> getDarkMode() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('darkMode') ?? false;
+  }
+
+  Future<void> _handleStudyNow() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('id');
+
+    if (userId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not identify user.')));
+      return;
+    }
+
+    try {
+      final history = await StreakService.getReviewHistory(userId);
+      final activeDates = (history['raw']['data']['activeDates'] as List)
+          .map((date) => DateTime.parse(date))
+          .toList();
+
+      final today = DateTime.now();
+      final isAlreadyStudiedToday = activeDates.any(
+        (date) =>
+            date.year == today.year &&
+            date.month == today.month &&
+            date.day == today.day,
+      );
+
+      if (!isAlreadyStudiedToday) {
+        await StreakService.recordReview(userId);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update streak: $e')));
+    }
+
+    if (flashcards.isNotEmpty) {
+      if (mounted) {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => StudyPage(
+              flashcards: flashcards,
+              subjectTitle: widget.subject['title'] ?? 'Study',
+            ),
+          ),
+        );
+
+        if (result == true) {
+          Navigator.pop(context, true);
+        }
+      }
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No flashcards to study!')));
+    }
   }
 
   @override
@@ -139,23 +197,7 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
                     borderRadius: BorderRadius.circular(25),
                   ),
                 ),
-                onPressed: () {
-                  if (flashcards.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StudyPage(
-                          flashcards: flashcards,
-                          subjectTitle: widget.subject['title'] ?? 'Study',
-                        ),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No flashcards to study!')),
-                    );
-                  }
-                },
+                onPressed: _handleStudyNow,
                 child: const Text(
                   'Study now',
                   style: TextStyle(color: Colors.white, fontSize: 18),

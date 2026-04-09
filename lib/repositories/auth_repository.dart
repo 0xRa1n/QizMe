@@ -12,8 +12,10 @@ class AuthRepository {
     final prefs = await SharedPreferences.getInstance();
 
     await Future.wait([
+      prefs.setString("id", userData['_id'] ?? ""),
       prefs.setString("email", email),
       prefs.setString("name", userData['name'] ?? ""),
+      prefs.setInt("currentStreak", userData['currentStreak'] ?? 0),
       prefs.setBool(
         "pushNotification",
         userPrefs['pushNotifications'] ?? false,

@@ -168,7 +168,11 @@ class _StudyPageState extends State<StudyPage> {
                               builder: (context) =>
                                   const StreakIncreasedScreen(),
                             ),
-                          );
+                          ).then((result) {
+                            if (result == true) {
+                              Navigator.pop(context, true);
+                            }
+                          });
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kPrimaryGreen,
