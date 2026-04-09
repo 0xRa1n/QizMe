@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:qizme/views/screens/increased_streak_screen.dart';
 import 'package:qizme/services/streak_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StudyPage extends StatefulWidget {
   final List<dynamic> flashcards;
@@ -177,18 +178,44 @@ class _StudyPageState extends State<StudyPage> {
                       width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const StreakIncreasedScreen(),
-                            ),
-                          ).then((result) {
-                            if (result == true) {
-                              Navigator.pop(context, true);
+                        onPressed: () async {
+                          int finalStreakCount = 0;
+                          final prefs = await SharedPreferences.getInstance();
+                          final userId = prefs.getString('id');
+
+                          if (userId != null) {
+                            try {
+                              // First, tell the backend to record the review.
+                              await StreakService.recordReview(userId);
+
+                              // Then, to be absolutely sure, fetch the latest streak count from the database.
+                              final streakData =
+                                  await StreakService.getStreakCount(userId);
+                              finalStreakCount =
+                                  streakData['raw']['data']['currentStreak'] ??
+                                  0;
+                            } catch (e) {
+                              // Log the error to the console to help with debugging.
+                              print('Error updating or fetching streak: $e');
+                              // If it fails, we'll navigate with a streak of 0.
+                              finalStreakCount = 0;
                             }
-                          });
+                          }
+
+                          if (mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => StreakIncreasedScreen(
+                                  streakCount: finalStreakCount,
+                                ),
+                              ),
+                            ).then((result) {
+                              if (result == true) {
+                                Navigator.pop(context, true);
+                              }
+                            });
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kPrimaryGreen,

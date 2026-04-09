@@ -13,7 +13,9 @@ class StreakService {
       'api/users/recordReview',
       {'userId': userId},
     );
-    return {'raw': responseBody};
+    // Assuming the response contains the updated user document or at least the new streak.
+    // Let's return the whole data part of the response.
+    return responseBody['data'];
   }
 
   static Future<Map<String, dynamic>> updateStreakPercentage(

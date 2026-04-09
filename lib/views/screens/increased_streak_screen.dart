@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
 class StreakIncreasedScreen extends StatelessWidget {
-  const StreakIncreasedScreen({super.key});
+  final int streakCount;
+
+  const StreakIncreasedScreen({super.key, required this.streakCount});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color kPrimaryGreen = Color(0xFF6B8E60);
+    final int totalIcons = 6;
+    final int filledIcons = streakCount > totalIcons ? totalIcons : streakCount;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
@@ -47,7 +51,7 @@ class StreakIncreasedScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ...List.generate(
-                    4,
+                    filledIcons,
                     (index) => const Icon(
                       Icons.local_fire_department,
                       color: Colors.orange,
@@ -55,7 +59,7 @@ class StreakIncreasedScreen extends StatelessWidget {
                     ),
                   ),
                   ...List.generate(
-                    2,
+                    totalIcons - filledIcons,
                     (index) => Icon(
                       Icons.circle,
                       color: isDark
