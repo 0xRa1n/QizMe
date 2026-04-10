@@ -44,7 +44,7 @@ class AuthRepository {
       password: password,
     );
 
-    final jsonMap = result;
+    final jsonMap = result['raw'];
     final data = jsonMap['data'] ?? {};
 
     await Future.wait([
@@ -52,6 +52,7 @@ class AuthRepository {
       prefs.setString('email', data['email'] ?? email),
       prefs.setString('username', data['username'] ?? username),
       prefs.setString('profilePicture', data['profilePicture'] ?? ''),
+      prefs.setString('id', data['_id'] ?? ''),
       prefs.remove('password'),
     ]);
   }

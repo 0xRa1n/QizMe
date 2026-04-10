@@ -279,7 +279,6 @@ Widget buildCalendarSection({required bool darkMode}) {
 
             // Once you have the userId, build the calendar grid
             final userId = snapshot.data!;
-            print('Loaded userId for calendar: $userId');
             return buildCalendarGrid(darkMode: darkMode, userId: userId);
           },
         ),

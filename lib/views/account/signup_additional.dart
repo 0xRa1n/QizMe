@@ -3,6 +3,7 @@ import 'package:qizme/repositories/auth_repository.dart';
 import 'package:qizme/utils/functions.dart';
 import 'package:qizme/utils/http.dart';
 import 'package:qizme/views/home/home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignupAdditional extends StatefulWidget {
   const SignupAdditional({super.key});
@@ -35,19 +36,21 @@ class _SignupAdditionalState extends State<SignupAdditional> {
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return; // validates the form fields
 
-    setState(() { // the purpose of this is to show the loading indicator
+    setState(() {
+      // the purpose of this is to show the loading indicator
       _isSigningUp = true;
     });
 
     try {
-      await _authRepository.signupAdditional(
-        name: _nameController.text.trim(), // trims the name and username before sending to the server
+      final result = await _authRepository.signupAdditional(
+        name: _nameController.text
+            .trim(), // trims the name and username before sending to the server
         username: _usernameController.text.trim(),
       );
-
       if (!mounted) return;
 
-      Navigator.pushAndRemoveUntil( // navigates to the QizMe screen and removes all previous screens from the stack
+      Navigator.pushAndRemoveUntil(
+        // navigates to the QizMe screen and removes all previous screens from the stack
         context,
         MaterialPageRoute(builder: (context) => const QizMe()),
         (route) => false,
