@@ -11,26 +11,31 @@ Future<String?> getEmailFromPreferences() async {
   return prefs.getString('email');
 }
 
-Widget buildSearchBar({required bool darkMode}) {
-  return Container(
-    height: 43,
-    decoration: BoxDecoration(
-      color: darkMode ? const Color(0xFF1E1E1E) : Colors.grey[100],
-      borderRadius: BorderRadius.circular(12),
-      border: darkMode ? null : Border.all(color: Colors.grey.shade300),
-    ),
-    child: TextField(
-      style: TextStyle(color: darkMode ? Colors.white70 : Colors.black87),
-      decoration: InputDecoration(
-        prefixIcon: Icon(
-          Icons.search,
-          color: darkMode ? Colors.grey[400] : Colors.black54,
+Widget buildSearchBar({required bool darkMode, required VoidCallback onTap}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 43,
+      decoration: BoxDecoration(
+        color: darkMode ? const Color(0xFF1E1E1E) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: darkMode ? null : Border.all(color: Colors.grey.shade300),
+      ),
+      child: AbsorbPointer(
+        child: TextField(
+          style: TextStyle(color: darkMode ? Colors.white70 : Colors.black87),
+          decoration: InputDecoration(
+            prefixIcon: Icon(
+              Icons.search,
+              color: darkMode ? Colors.grey[400] : Colors.black54,
+            ),
+            hintText: 'Search',
+            hintStyle: TextStyle(
+              color: darkMode ? Colors.grey[400] : Colors.black54,
+            ),
+            border: InputBorder.none,
+          ),
         ),
-        hintText: 'Search',
-        hintStyle: TextStyle(
-          color: darkMode ? Colors.grey[400] : Colors.black54,
-        ),
-        border: InputBorder.none,
       ),
     ),
   );

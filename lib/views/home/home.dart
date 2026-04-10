@@ -12,6 +12,7 @@ import 'package:qizme/repositories/auth_repository.dart';
 import 'package:qizme/views/screens/create_flashcard_page.dart';
 import 'package:qizme/views/screens/edit_flashcard_page.dart';
 import 'package:qizme/views/screens/subject_content_page.dart';
+import 'package:qizme/views/widgets/qizme_search_delegate.dart';
 
 class QizMe extends StatefulWidget {
   const QizMe({super.key});
@@ -89,6 +90,38 @@ class _QizMeState extends State<QizMe> {
         _showSettings = false;
       }
     });
+  }
+
+  void _showSearch() async {
+    final result = await showSearch<String>(
+      context: context,
+      delegate: QizmeSearchDelegate(darkMode: _darkMode),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      switch (result) {
+        case 'create_card':
+          changeTab(1);
+          break;
+        case 'library':
+          changeTab(2);
+          break;
+        case 'account':
+          setState(() {
+            currentPageIndex = 3;
+            _showEditAccount = true;
+            _showSettings = false;
+          });
+          break;
+        case 'settings':
+          setState(() {
+            currentPageIndex = 3;
+            _showEditAccount = false;
+            _showSettings = true;
+          });
+          break;
+      }
+    }
   }
 
   void _selectSubject(Map<String, dynamic> subject) {
@@ -574,7 +607,10 @@ class _QizMeState extends State<QizMe> {
                   ),
                 ],
               )
-            : home_widgets.buildSearchBar(darkMode: _darkMode),
+            : home_widgets.buildSearchBar(
+                darkMode: _darkMode,
+                onTap: _showSearch,
+              ),
         actions:
             (_selectedSubject != null &&
                 !_showCreateFlashcard &&
