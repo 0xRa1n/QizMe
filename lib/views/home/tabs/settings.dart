@@ -150,10 +150,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     // Apply styles based on the theme
     final Color containerColor = isDark
-        ? const Color(0xFF1E1E1E)
+        ? const Color.fromARGB(255, 45, 106, 79)
         : Colors.grey[200]!;
-    final Color textColor = isDark ? Colors.white70 : Colors.black;
-    final FontWeight fontWeight = isDark ? FontWeight.normal : FontWeight.w500;
+    final Color textColor = isDark ? Colors.white : Colors.black;
+    final FontWeight fontWeight = isDark ? FontWeight.w600 : FontWeight.w500;
     final BoxBorder? border = isDark
         ? null
         : Border.all(color: Colors.black12, width: 1);
