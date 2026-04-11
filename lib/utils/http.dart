@@ -32,12 +32,24 @@ class ApiService {
     };
   }
 
+  static Map<String, String> _getDebugHostHeader(Uri resolvedUrl) {
+    final base = Uri.parse(baseUrl);
+    final shouldForceLocalhostHost =
+        resolvedUrl.host == '10.0.2.2' && base.host == 'localhost';
+
+    if (!shouldForceLocalhostHost) return {};
+
+    final port = base.hasPort ? ':${base.port}' : '';
+    return {'host': 'localhost$port'};
+  }
+
   // Generic GET request function
   static Future<dynamic> getRequest(String endpoint) async {
-    final url = Uri.parse('$baseUrl/$endpoint');
+    final url = Uri.parse('$resolvedBaseUrl/$endpoint');
+    final headers = {..._getHeaders(), ..._getDebugHostHeader(url)};
 
     try {
-      final response = await http.get(url, headers: _getHeaders());
+      final response = await http.get(url, headers: headers);
 
       return _processResponse(response);
     } on ApiException {
@@ -56,12 +68,13 @@ class ApiService {
     String endpoint,
     Map<String, dynamic> body,
   ) async {
-    final url = Uri.parse('$baseUrl/$endpoint');
+    final url = Uri.parse('$resolvedBaseUrl/$endpoint');
+    final headers = {..._getHeaders(), ..._getDebugHostHeader(url)};
 
     try {
       final response = await http.post(
         url,
-        headers: _getHeaders(),
+        headers: headers,
         body: jsonEncode(body), // Convert Dart Map to JSON string
       );
 
@@ -84,13 +97,14 @@ class ApiService {
     Map<String, String> fields,
     String filePath,
   ) async {
-    final url = Uri.parse('$baseUrl/$endpoint');
+    final url = Uri.parse('$resolvedBaseUrl/$endpoint');
     // print('POST FILE URL: $url');
     // print('FILE PATH: $filePath');
     // print('FIELDS: $fields');
 
     try {
       final request = http.MultipartRequest('POST', url)
+        ..headers.addAll(_getDebugHostHeader(url))
         ..fields.addAll(fields)
         ..files.add(
           await http.MultipartFile.fromPath(
@@ -112,17 +126,56 @@ class ApiService {
     }
   }
 
+  static Future<dynamic> postMultipartRequest(
+    String endpoint, {
+    required Map<String, String> fields,
+    Map<String, String>? files,
+  }) async {
+    final url = Uri.parse('$resolvedBaseUrl/$endpoint');
+
+    try {
+      final request = http.MultipartRequest('POST', url)
+        ..headers.addAll(_getDebugHostHeader(url))
+        ..fields.addAll(fields);
+
+      if (files != null) {
+        for (final entry in files.entries) {
+          final path = entry.value.trim();
+          if (path.isEmpty) continue;
+
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              entry.key,
+              path,
+              filename: path.split(RegExp(r'[\\/]')).last,
+              contentType: _inferImageMediaType(path),
+            ),
+          );
+        }
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return _processResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Upload failed: $e');
+    }
+  }
+
   // Generic POST request function
   static Future<dynamic> putRequest(
     String endpoint,
     Map<String, dynamic> body,
   ) async {
-    final url = Uri.parse('$baseUrl/$endpoint');
+    final url = Uri.parse('$resolvedBaseUrl/$endpoint');
+    final headers = {..._getHeaders(), ..._getDebugHostHeader(url)};
 
     try {
       final response = await http.put(
         url,
-        headers: _getHeaders(),
+        headers: headers,
         body: jsonEncode(body), // Convert Dart Map to JSON string
       );
 
@@ -144,12 +197,13 @@ class ApiService {
     String endpoint,
     Map<String, dynamic> body,
   ) async {
-    final url = Uri.parse('$baseUrl/$endpoint');
+    final url = Uri.parse('$resolvedBaseUrl/$endpoint');
+    final headers = {..._getHeaders(), ..._getDebugHostHeader(url)};
 
     try {
       final response = await http.delete(
         url,
-        headers: _getHeaders(),
+        headers: headers,
         body: jsonEncode(body), // Convert Dart Map to JSON string
       );
 
@@ -188,5 +242,25 @@ class ApiService {
       );
     }
     throw ApiException('Server Error', statusCode);
+  }
+
+  static MediaType _inferImageMediaType(String path) {
+    final normalized = path.toLowerCase();
+
+    if (normalized.endsWith('.png')) {
+      return MediaType('image', 'png');
+    }
+    if (normalized.endsWith('.webp')) {
+      return MediaType('image', 'webp');
+    }
+    if (normalized.endsWith('.heic')) {
+      return MediaType('image', 'heic');
+    }
+    if (normalized.endsWith('.heif')) {
+      return MediaType('image', 'heif');
+    }
+
+    // Default to jpeg for .jpg/.jpeg and unknown camera outputs.
+    return MediaType('image', 'jpeg');
   }
 }

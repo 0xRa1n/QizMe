@@ -14,19 +14,40 @@ class CardService {
   }
 
   static Future<Map<String, dynamic>> createFlashcards({
-    required String question,
-    required String answer,
+    String? question,
+    String? answer,
+    String? questionImagePath,
+    String? answerImagePath,
     required String flashcardColor,
     required String flashcardID,
   }) async {
-    final responseBody = await ApiService.postRequest(
-      "api/card/$flashcardID/addFlashcard",
-      {
-        "question": question,
-        "answer": answer,
-        "flashcardColor": flashcardColor,
-      },
-    );
+    final fields = <String, String>{"flashcardColor": flashcardColor};
+
+    if (question != null && question.trim().isNotEmpty) {
+      fields["question"] = question.trim();
+    }
+    if (answer != null && answer.trim().isNotEmpty) {
+      fields["answer"] = answer.trim();
+    }
+
+    final hasQuestionImage =
+        questionImagePath != null && questionImagePath.trim().isNotEmpty;
+    final hasAnswerImage =
+        answerImagePath != null && answerImagePath.trim().isNotEmpty;
+
+    final responseBody = (hasQuestionImage || hasAnswerImage)
+        ? await ApiService.postMultipartRequest(
+            "api/card/$flashcardID/addFlashcard",
+            fields: fields,
+            files: {
+              if (hasQuestionImage) "questionImage": questionImagePath!,
+              if (hasAnswerImage) "answerImage": answerImagePath!,
+            },
+          )
+        : await ApiService.postRequest(
+            "api/card/$flashcardID/addFlashcard",
+            fields,
+          );
 
     return {"raw": responseBody};
   }

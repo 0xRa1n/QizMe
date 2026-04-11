@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:qizme/services/card_service.dart';
 import 'package:qizme/services/streak_service.dart';
 import 'package:qizme/views/screens/study_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 class SubjectContentPage extends StatefulWidget {
   final Map<String, dynamic> subject;
@@ -154,16 +156,33 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
                                   ),
                                   TextButton(
                                     onPressed: () async {
+                                      final flashcardIndex = index;
+                                      final flashcardId = flashcard['_id'];
+                                      print(flashcardIndex);
                                       print(
-                                        'card ID: ${widget.subject['_id']}, flashcard ID: ${flashcard['_id']}',
+                                        'card ID: ${widget.subject['_id']}, flashcard ID: $flashcardId',
                                       );
+
+                                      if (flashcardId == null) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Could not find flashcard id.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
                                       try {
                                         await CardService.deleteFlashcard(
                                           cardID: widget.subject['_id'],
-                                          flashcardID: flashcard['_id'],
+                                          flashcardID: flashcardId,
                                         );
                                         setState(() {
-                                          flashcards.removeAt(index);
+                                          flashcards.removeAt(flashcardIndex);
                                         });
                                       } catch (e) {
                                         // show a snackbar
@@ -226,6 +245,19 @@ class FlashcardItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final darkMode = Theme.of(context).brightness == Brightness.dark;
     final cardColor = darkMode ? Colors.grey[800] : Colors.grey[200];
+    final question = flashcard['question'];
+    final questionImage = _normalizeImageUrl(flashcard['questionImage']);
+    final answerImage = _normalizeImageUrl(flashcard['answerImage']);
+    final questionImagePath = _getLocalImagePath(
+      flashcard['questionImagePath'],
+    );
+    final answerImagePath = _getLocalImagePath(flashcard['answerImagePath']);
+    final hasQuestionImage =
+        (questionImage != null && questionImage.isNotEmpty) ||
+        questionImagePath != null;
+    final hasAnswerImage =
+        (answerImage != null && answerImage.isNotEmpty) ||
+        answerImagePath != null;
 
     return Card(
       color: cardColor,
@@ -238,13 +270,21 @@ class FlashcardItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  flashcard['question'] ?? '',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                if (hasQuestionImage)
+                  _buildFlashcardImage(
+                    networkUrl: questionImage,
+                    localPath: questionImagePath,
                   ),
-                ),
+                if (hasQuestionImage && question != null)
+                  const SizedBox(height: 8),
+                if (question != null)
+                  Text(
+                    question,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 Text(
                   flashcard['answer'] ?? '',
@@ -252,6 +292,12 @@ class FlashcardItem extends StatelessWidget {
                     color: darkMode ? Colors.white70 : Colors.black54,
                   ),
                 ),
+                if (hasAnswerImage) const SizedBox(height: 8),
+                if (hasAnswerImage)
+                  _buildFlashcardImage(
+                    networkUrl: answerImage,
+                    localPath: answerImagePath,
+                  ),
               ],
             ),
           ),
@@ -279,6 +325,56 @@ class FlashcardItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  String? _normalizeImageUrl(dynamic rawUrl) {
+    if (rawUrl is! String) return null;
+
+    final url = rawUrl.trim();
+    if (url.isEmpty) return null;
+
+    final isAndroidDebug =
+        kDebugMode &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroidDebug) return url;
+
+    return url
+        .replaceFirst(
+          RegExp(r'^http://localhost(?=[:/])', caseSensitive: false),
+          'http://10.0.2.2',
+        )
+        .replaceFirst(
+          RegExp(r'^https://localhost(?=[:/])', caseSensitive: false),
+          'https://10.0.2.2',
+        );
+  }
+
+  String? _getLocalImagePath(dynamic rawPath) {
+    if (rawPath is! String) return null;
+
+    final path = rawPath.trim();
+    if (path.isEmpty) return null;
+
+    return path;
+  }
+
+  Widget _buildFlashcardImage({String? networkUrl, String? localPath}) {
+    if (!kIsWeb && localPath != null && localPath.isNotEmpty) {
+      return Image.file(
+        File(localPath),
+        height: 150,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    }
+
+    return Image.network(
+      networkUrl ?? '',
+      height: 150,
+      width: double.infinity,
+      fit: BoxFit.cover,
     );
   }
 }

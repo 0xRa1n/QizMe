@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:qizme/services/card_service.dart';
+import 'dart:io';
 
 class CreateFlashcardPage extends StatefulWidget {
   final bool darkMode;
@@ -22,10 +24,13 @@ class CreateFlashcardPage extends StatefulWidget {
 class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
   final TextEditingController _frontController = TextEditingController();
   final TextEditingController _backController = TextEditingController();
-  final List<Map<String, String>> _addedCards = [];
+  final List<Map<String, String?>> _addedCards = [];
+  final ImagePicker _imagePicker = ImagePicker();
   bool _isLoading = false;
   bool _isFrontEmpty = false;
   bool _isBackEmpty = false;
+  String? _frontImagePath;
+  String? _backImagePath;
 
   @override
   void dispose() {
@@ -69,6 +74,14 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
             textColor: textColor,
             hintColor: hintColor,
             isError: _isFrontEmpty,
+            selectedImagePath: _frontImagePath,
+            onImageTap: () => _showImageSourceSheet(isFront: true),
+            hideTextFieldWhenImageSelected: true,
+            onRemoveImage: () {
+              setState(() {
+                _frontImagePath = null;
+              });
+            },
           ),
           const SizedBox(height: 16),
           _buildCardSide(
@@ -81,6 +94,14 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
             hintColor: hintColor,
             showCheckbox: true,
             isError: _isBackEmpty,
+            selectedImagePath: _backImagePath,
+            onImageTap: () => _showImageSourceSheet(isFront: false),
+            hideTextFieldWhenImageSelected: true,
+            onRemoveImage: () {
+              setState(() {
+                _backImagePath = null;
+              });
+            },
           ),
           const SizedBox(height: 24),
           Row(
@@ -91,8 +112,12 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
                     ? null
                     : () async {
                         setState(() {
-                          _isFrontEmpty = _frontController.text.trim().isEmpty;
-                          _isBackEmpty = _backController.text.trim().isEmpty;
+                          _isFrontEmpty =
+                              _frontController.text.trim().isEmpty &&
+                              _frontImagePath == null;
+                          _isBackEmpty =
+                              _backController.text.trim().isEmpty &&
+                              _backImagePath == null;
                         });
 
                         if (_isFrontEmpty || _isBackEmpty) {
@@ -105,8 +130,14 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
 
                         try {
                           await CardService.createFlashcards(
-                            question: _frontController.text,
-                            answer: _backController.text,
+                            question: _frontController.text.trim().isEmpty
+                                ? null
+                                : _frontController.text,
+                            answer: _backController.text.trim().isEmpty
+                                ? null
+                                : _backController.text,
+                            questionImagePath: _frontImagePath,
+                            answerImagePath: _backImagePath,
                             flashcardColor: "#FFFFFF",
                             flashcardID: widget.cardId,
                           );
@@ -133,10 +164,14 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
                               final newCard = {
                                 'question': _frontController.text,
                                 'answer': _backController.text,
+                                'questionImagePath': _frontImagePath,
+                                'answerImagePath': _backImagePath,
                               };
                               _addedCards.insert(0, newCard);
                               _frontController.clear();
                               _backController.clear();
+                              _frontImagePath = null;
+                              _backImagePath = null;
                               _isFrontEmpty = false;
                               _isBackEmpty = false;
 
@@ -216,6 +251,9 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
               itemCount: _addedCards.length,
               itemBuilder: (context, index) {
                 final card = _addedCards[index];
+                final questionImagePath = card['questionImagePath'];
+                final answerImagePath = card['answerImagePath'];
+
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
@@ -227,6 +265,19 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (questionImagePath != null &&
+                          questionImagePath.isNotEmpty) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(questionImagePath),
+                            width: double.infinity,
+                            height: 110,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       Text(
                         card['question'] ?? '',
                         style: TextStyle(
@@ -240,6 +291,18 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
                         card['answer'] ?? '',
                         style: TextStyle(fontSize: 14, color: hintColor),
                       ),
+                      if (answerImagePath != null && answerImagePath.isNotEmpty)
+                        const SizedBox(height: 8),
+                      if (answerImagePath != null && answerImagePath.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(answerImagePath),
+                            width: double.infinity,
+                            height: 110,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                     ],
                   ),
                 );
@@ -259,9 +322,16 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
     required Color textFieldColor,
     required Color textColor,
     required Color hintColor,
+    required VoidCallback onImageTap,
+    required VoidCallback onRemoveImage,
+    String? selectedImagePath,
+    bool hideTextFieldWhenImageSelected = false,
     bool showCheckbox = false,
     bool isError = false,
   }) {
+    final shouldHideTextField =
+        hideTextFieldWhenImageSelected && selectedImagePath != null;
+
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -305,30 +375,133 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
                 width: isError ? 1.5 : 1.0,
               ),
             ),
-            child: Stack(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: controller,
-                  maxLines: 4,
-                  style: TextStyle(color: textColor),
-                  cursorColor: textColor,
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    hintStyle: TextStyle(color: hintColor),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(12),
+                if (selectedImagePath != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(selectedImagePath),
+                            width: double.infinity,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: InkWell(
+                            onTap: onRemoveImage,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(3),
+                              child: const Icon(
+                                Icons.close,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Icon(Icons.image_outlined, color: hintColor),
-                ),
+                  const SizedBox(height: 8),
+                ],
+                if (!shouldHideTextField)
+                  Stack(
+                    children: [
+                      TextField(
+                        controller: controller,
+                        maxLines: 4,
+                        style: TextStyle(color: textColor),
+                        cursorColor: textColor,
+                        decoration: InputDecoration(
+                          hintText: hintText,
+                          hintStyle: TextStyle(color: hintColor),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            12,
+                            12,
+                            40,
+                            12,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: IconButton(
+                          icon: Icon(Icons.image_outlined, color: hintColor),
+                          onPressed: onImageTap,
+                          tooltip: 'Add image',
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      icon: Icon(Icons.image_outlined, color: hintColor),
+                      onPressed: onImageTap,
+                      tooltip: 'Change image',
+                    ),
+                  ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showImageSourceSheet({required bool isFront}) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    final pickedFile = await _imagePicker.pickImage(source: source);
+    if (pickedFile == null || !mounted) return;
+
+    setState(() {
+      if (isFront) {
+        _frontImagePath = pickedFile.path;
+      } else {
+        _backImagePath = pickedFile.path;
+      }
+    });
   }
 }

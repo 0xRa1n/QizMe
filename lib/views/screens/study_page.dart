@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:math';
 import 'package:qizme/views/screens/increased_streak_screen.dart';
 import 'package:qizme/services/streak_service.dart';
@@ -270,8 +271,10 @@ class _StudyPageState extends State<StudyPage> {
     }
 
     final currentCard = widget.flashcards[_currentIndex];
-    final question = currentCard['question'] ?? 'No Question';
-    final answer = currentCard['answer'] ?? 'No Answer';
+    final question = currentCard['question']?.toString();
+    final answer = currentCard['answer']?.toString();
+    final questionImage = _normalizeImageUrl(currentCard['questionImage']);
+    final answerImage = _normalizeImageUrl(currentCard['answerImage']);
 
     return Scaffold(
       backgroundColor: isDark
@@ -340,51 +343,53 @@ class _StudyPageState extends State<StudyPage> {
                           return AnimatedBuilder(
                             animation: rotate,
                             child: child,
-                            builder: (context, child) {
-                              final angle = (ValueKey(_isFlipped) != child!.key)
+                            builder: (BuildContext context, Widget? child) {
+                              final isUnder =
+                                  (ValueKey(_isFlipped) != child?.key);
+                              var tilt =
+                                  ((animation.value - 0.5).abs() - 0.5) * 0.003;
+                              tilt = tilt * (isUnder ? -1.0 : 1.0);
+                              final value = isUnder
                                   ? min(rotate.value, pi / 2)
                                   : rotate.value;
                               return Transform(
-                                transform: Matrix4.rotationY(angle),
+                                transform: Matrix4.rotationY(value)
+                                  ..setEntry(3, 0, tilt),
                                 alignment: Alignment.center,
                                 child: child,
                               );
                             },
                           );
                         },
-                    child: Container(
+                    child: ClipRRect(
                       key: ValueKey<bool>(_isFlipped),
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: _isFlipped
-                            ? const Color(
-                                0xFF388E3C,
-                              ) // Green background for answer
-                            : (isDark
-                                  ? const Color(0xFF2C2C2C)
-                                  : const Color(0xFFE0E0E0)),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(32.0),
-                      child: Center(
-                        child: Text(
-                          _isFlipped ? answer : question,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w500,
-                            color: _isFlipped
-                                ? Colors.white
-                                : (isDark ? Colors.white : Colors.black87),
-                          ),
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: _isFlipped
+                              ? (isDark ? Colors.grey.shade800 : Colors.white)
+                              : (isDark ? Colors.grey.shade800 : Colors.white),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              spreadRadius: 2,
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
                         ),
+                        child: _isFlipped
+                            ? _buildCardFace(
+                                text: answer,
+                                imageUrl: answerImage,
+                                fallbackText: 'No Answer',
+                              )
+                            : _buildCardFace(
+                                text: question,
+                                imageUrl: questionImage,
+                                fallbackText: 'No Question',
+                              ),
                       ),
                     ),
                   ),
@@ -404,20 +409,22 @@ class _StudyPageState extends State<StudyPage> {
                     Expanded(
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
+                          foregroundColor: isDark ? Colors.white : Colors.black,
                           side: BorderSide(
                             color: isDark ? Colors.white54 : Colors.black54,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                         onPressed: _isFlipped ? _previousCard : null,
                         child: Text(
                           'Study Again',
                           style: TextStyle(
-                            fontSize: 18,
-                            color: isDark ? Colors.white : Colors.black87,
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       ),
@@ -426,23 +433,21 @@ class _StudyPageState extends State<StudyPage> {
                     Expanded(
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.green,
+                          side: const BorderSide(color: Colors.green),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          side: BorderSide(
-                            color: isDark ? Colors.white54 : Colors.black54,
-                          ),
-                          backgroundColor: isDark
-                              ? Colors.grey[800]
-                              : Colors.grey[300],
                         ),
                         onPressed: _isFlipped ? _nextCard : null,
                         child: Text(
                           'I got it',
                           style: TextStyle(
-                            fontSize: 18,
-                            color: isDark ? Colors.white : Colors.black87,
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.white,
                           ),
                         ),
                       ),
@@ -456,5 +461,98 @@ class _StudyPageState extends State<StudyPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildCardFace({
+    required String? text,
+    required dynamic imageUrl,
+    required String fallbackText,
+  }) {
+    final hasImage = imageUrl is String && imageUrl.trim().isNotEmpty;
+    final hasText = text != null && text.trim().isNotEmpty;
+
+    if (!hasImage) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Text(
+            hasText ? text : fallbackText,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
+          ),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final imageMaxHeight = hasText
+            ? constraints.maxHeight * 0.62
+            : constraints.maxHeight * 0.82;
+
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 20.0,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth,
+                    maxHeight: imageMaxHeight,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      imageUrl.trim(),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
+                if (hasText) const SizedBox(height: 16),
+                if (hasText)
+                  Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String? _normalizeImageUrl(dynamic rawUrl) {
+    if (rawUrl is! String) return null;
+
+    final url = rawUrl.trim();
+    if (url.isEmpty) return null;
+
+    final isAndroidDebug =
+        kDebugMode &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroidDebug) return url;
+
+    return url
+        .replaceFirst(
+          RegExp(r'^http://localhost(?=[:/])', caseSensitive: false),
+          'http://10.0.2.2',
+        )
+        .replaceFirst(
+          RegExp(r'^https://localhost(?=[:/])', caseSensitive: false),
+          'https://10.0.2.2',
+        );
   }
 }
