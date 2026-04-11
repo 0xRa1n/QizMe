@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-const String baseUrl = 'http://localhost:8000';
+const String baseUrl = 'http://143.198.209.74:8000';
 // 143.198.209.74 - endpoint
 // 10.0.2.2 - Android emulator localhost bridge
 

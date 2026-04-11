@@ -276,6 +276,8 @@ class _StudyPageState extends State<StudyPage> {
     final questionImage = _normalizeImageUrl(currentCard['questionImage']);
     final answerImage = _normalizeImageUrl(currentCard['answerImage']);
 
+    print(currentCard);
+
     return Scaffold(
       backgroundColor: isDark
           ? const Color(0xFF121212)

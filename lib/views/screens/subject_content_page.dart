@@ -132,75 +132,10 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
                         final flashcard = flashcards[index];
                         return FlashcardItem(
                           flashcard: flashcard,
-                          onEdit: () {
-                            if (widget.onEditFlashcard != null) {
-                              widget.onEditFlashcard!(
-                                flashcard as Map<String, dynamic>,
-                              );
-                            }
-                          },
-                          onDelete: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Delete Flashcard'),
-                                content: const Text(
-                                  'Are you sure you want to delete this flashcard?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      final flashcardIndex = index;
-                                      final flashcardId = flashcard['_id'];
-                                      print(flashcardIndex);
-                                      print(
-                                        'card ID: ${widget.subject['_id']}, flashcard ID: $flashcardId',
-                                      );
-
-                                      if (flashcardId == null) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Could not find flashcard id.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      try {
-                                        await CardService.deleteFlashcard(
-                                          cardID: widget.subject['_id'],
-                                          flashcardID: flashcardId,
-                                        );
-                                        setState(() {
-                                          flashcards.removeAt(flashcardIndex);
-                                        });
-                                      } catch (e) {
-                                        // show a snackbar
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(content: Text(e.toString())),
-                                        );
-                                      } finally {
-                                        Navigator.pop(context);
-                                      }
-                                    },
-                                    child: const Text('OK'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                          onEdit: () =>
+                              _showEditFlashcardDialog(flashcard, index),
+                          onDelete: () =>
+                              _showDeleteConfirmationDialog(flashcard, index),
                         );
                       },
                     ),
@@ -225,6 +160,94 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
           ],
         );
       },
+    );
+  }
+
+  void _showEditFlashcardDialog(
+    Map<String, dynamic> flashcard,
+    int flashcardIndex,
+  ) {
+    final flashcardId = _extractFlashcardId(flashcard);
+    if (flashcardId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not find flashcard id.')),
+      );
+      return;
+    }
+
+    flashcard['_id'] = flashcardId;
+
+    if (widget.onEditFlashcard != null) {
+      widget.onEditFlashcard!(flashcard);
+    }
+  }
+
+  String? _extractFlashcardId(Map<String, dynamic> flashcard) {
+    const idKeys = ['_id', 'id', 'flashcardId', 'flashcardID', 'FlashcardID'];
+
+    for (final key in idKeys) {
+      final value = flashcard[key];
+      if (value == null) continue;
+      final id = value.toString().trim();
+      if (id.isNotEmpty) return id;
+    }
+
+    return null;
+  }
+
+  void _showDeleteConfirmationDialog(
+    Map<String, dynamic> flashcard,
+    int index,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Flashcard'),
+        content: const Text('Are you sure you want to delete this flashcard?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final flashcardIndex = index;
+              final flashcardId = flashcard['_id'];
+              print(flashcardIndex);
+              print(
+                'card ID: ${widget.subject['_id']}, flashcard ID: $flashcardId',
+              );
+
+              if (flashcardId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Could not find flashcard id.')),
+                );
+                return;
+              }
+
+              try {
+                await CardService.deleteFlashcard(
+                  cardID: widget.subject['_id'],
+                  flashcardID: flashcardId,
+                );
+                setState(() {
+                  flashcards.removeAt(flashcardIndex);
+                });
+              } catch (e) {
+                // show a snackbar
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(e.toString())));
+              } finally {
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
     );
   }
 }

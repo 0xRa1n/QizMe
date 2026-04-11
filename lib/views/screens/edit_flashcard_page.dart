@@ -32,6 +32,8 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
   String? _backImagePath;
   String? _existingQuestionImageUrl;
   String? _existingAnswerImageUrl;
+  String? _existingQuestionImagePath;
+  String? _existingAnswerImagePath;
 
   @override
   void initState() {
@@ -43,11 +45,33 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
       text: widget.flashcard['answer'] ?? '',
     );
     _existingQuestionImageUrl = _normalizeImageUrl(
-      widget.flashcard['questionImage'],
+      _pickFirstString(widget.flashcard, const [
+        'questionImage',
+        'question_image',
+        'frontImage',
+        'front_image',
+      ]),
     );
     _existingAnswerImageUrl = _normalizeImageUrl(
-      widget.flashcard['answerImage'],
+      _pickFirstString(widget.flashcard, const [
+        'answerImage',
+        'answer_image',
+        'backImage',
+        'back_image',
+      ]),
     );
+    _existingQuestionImagePath = _pickFirstString(widget.flashcard, const [
+      'questionImagePath',
+      'question_image_path',
+      'frontImagePath',
+      'front_image_path',
+    ]);
+    _existingAnswerImagePath = _pickFirstString(widget.flashcard, const [
+      'answerImagePath',
+      'answer_image_path',
+      'backImagePath',
+      'back_image_path',
+    ]);
   }
 
   @override
@@ -87,12 +111,16 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
             existingImageUrl: _frontImagePath == null
                 ? _existingQuestionImageUrl
                 : null,
+            existingImagePath: _frontImagePath == null
+                ? _existingQuestionImagePath
+                : null,
             onImageTap: () => _showImageSourceSheet(isFront: true),
             hideTextFieldWhenImageSelected: true,
             onRemoveImage: () {
               setState(() {
                 _frontImagePath = null;
                 _existingQuestionImageUrl = null;
+                _existingQuestionImagePath = null;
               });
             },
           ),
@@ -111,12 +139,16 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
             existingImageUrl: _backImagePath == null
                 ? _existingAnswerImageUrl
                 : null,
+            existingImagePath: _backImagePath == null
+                ? _existingAnswerImagePath
+                : null,
             onImageTap: () => _showImageSourceSheet(isFront: false),
             hideTextFieldWhenImageSelected: true,
             onRemoveImage: () {
               setState(() {
                 _backImagePath = null;
                 _existingAnswerImageUrl = null;
+                _existingAnswerImagePath = null;
               });
             },
           ),
@@ -138,7 +170,7 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
                 return;
               }
 
-              final flashcardId = widget.flashcard['_id'];
+              final flashcardId = _extractFlashcardId(widget.flashcard);
               final cardId = widget.cardId;
 
               if (flashcardId == null) {
@@ -149,27 +181,8 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
               }
 
               try {
-                final hasQuestionImageAfterEdit =
-                    (_frontImagePath != null && _frontImagePath!.isNotEmpty) ||
-                    (_frontImagePath == null &&
-                        _existingQuestionImageUrl != null &&
-                        _existingQuestionImageUrl!.isNotEmpty);
-                final hasAnswerImageAfterEdit =
-                    (_backImagePath != null && _backImagePath!.isNotEmpty) ||
-                    (_backImagePath == null &&
-                        _existingAnswerImageUrl != null &&
-                        _existingAnswerImageUrl!.isNotEmpty);
-
-                final questionToSend = hasQuestionImageAfterEdit
-                    ? null
-                    : (_frontController.text.trim().isEmpty
-                          ? null
-                          : _frontController.text);
-                final answerToSend = hasAnswerImageAfterEdit
-                    ? null
-                    : (_backController.text.trim().isEmpty
-                          ? null
-                          : _backController.text);
+                final questionToSend = _frontController.text;
+                final answerToSend = _backController.text;
 
                 await CardService.updateFlashcard(
                   flashcardID: flashcardId.toString(),
@@ -187,14 +200,16 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
                   if (_frontImagePath != null) {
                     widget.flashcard['questionImagePath'] = _frontImagePath;
                     widget.flashcard.remove('questionImage');
-                  } else if (_existingQuestionImageUrl == null) {
+                  } else if (_existingQuestionImageUrl == null &&
+                      _existingQuestionImagePath == null) {
                     widget.flashcard.remove('questionImage');
                     widget.flashcard.remove('questionImagePath');
                   }
                   if (_backImagePath != null) {
                     widget.flashcard['answerImagePath'] = _backImagePath;
                     widget.flashcard.remove('answerImage');
-                  } else if (_existingAnswerImageUrl == null) {
+                  } else if (_existingAnswerImageUrl == null &&
+                      _existingAnswerImagePath == null) {
                     widget.flashcard.remove('answerImage');
                     widget.flashcard.remove('answerImagePath');
                   }
@@ -255,13 +270,15 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
     required VoidCallback onRemoveImage,
     String? selectedImagePath,
     String? existingImageUrl,
+    String? existingImagePath,
     bool hideTextFieldWhenImageSelected = false,
     bool showCheckbox = false,
     bool isError = false,
   }) {
     final hasImage =
         (selectedImagePath != null && selectedImagePath.isNotEmpty) ||
-        (existingImageUrl != null && existingImageUrl.isNotEmpty);
+        (existingImageUrl != null && existingImageUrl.isNotEmpty) ||
+        (existingImagePath != null && existingImagePath.isNotEmpty);
     final shouldHideTextField = hideTextFieldWhenImageSelected && hasImage;
 
     return Container(
@@ -320,6 +337,44 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
                           borderRadius: BorderRadius.circular(8),
                           child: Image.file(
                             File(selectedImagePath),
+                            width: double.infinity,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: InkWell(
+                            onTap: onRemoveImage,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(3),
+                              child: const Icon(
+                                Icons.close,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ] else if (existingImagePath != null &&
+                    existingImagePath.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(existingImagePath),
                             width: double.infinity,
                             height: 100,
                             fit: BoxFit.cover,
@@ -481,6 +536,28 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
     final text = value.trim();
     if (text.isEmpty) return null;
     return text;
+  }
+
+  String? _pickFirstString(Map<String, dynamic> map, List<String> keys) {
+    for (final key in keys) {
+      final value = map[key];
+      final text = _asNonEmptyString(value);
+      if (text != null) return text;
+    }
+    return null;
+  }
+
+  String? _extractFlashcardId(Map<String, dynamic> flashcard) {
+    const idKeys = ['_id', 'id', 'flashcardId', 'flashcardID', 'FlashcardID'];
+
+    for (final key in idKeys) {
+      final value = flashcard[key];
+      if (value == null) continue;
+      final id = value.toString().trim();
+      if (id.isNotEmpty) return id;
+    }
+
+    return null;
   }
 
   String? _normalizeImageUrl(dynamic rawUrl) {
