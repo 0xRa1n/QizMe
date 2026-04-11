@@ -266,7 +266,7 @@ class FlashcardItem extends StatelessWidget {
       child: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 22.0, 52.0, 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -275,9 +275,7 @@ class FlashcardItem extends StatelessWidget {
                     networkUrl: questionImage,
                     localPath: questionImagePath,
                   ),
-                if (hasQuestionImage && question != null)
-                  const SizedBox(height: 8),
-                if (question != null)
+                if (!hasQuestionImage && question != null)
                   Text(
                     question,
                     style: const TextStyle(
@@ -285,13 +283,14 @@ class FlashcardItem extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                const SizedBox(height: 8),
-                Text(
-                  flashcard['answer'] ?? '',
-                  style: TextStyle(
-                    color: darkMode ? Colors.white70 : Colors.black54,
+                if (!hasAnswerImage) const SizedBox(height: 8),
+                if (!hasAnswerImage)
+                  Text(
+                    flashcard['answer'] ?? '',
+                    style: TextStyle(
+                      color: darkMode ? Colors.white70 : Colors.black54,
+                    ),
                   ),
-                ),
                 if (hasAnswerImage) const SizedBox(height: 8),
                 if (hasAnswerImage)
                   _buildFlashcardImage(
@@ -302,8 +301,8 @@ class FlashcardItem extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 0,
-            right: 0,
+            top: 6,
+            right: 6,
             child: PopupMenuButton<String>(
               icon: const Icon(Icons.more_horiz),
               onSelected: (value) {
@@ -362,19 +361,17 @@ class FlashcardItem extends StatelessWidget {
 
   Widget _buildFlashcardImage({String? networkUrl, String? localPath}) {
     if (!kIsWeb && localPath != null && localPath.isNotEmpty) {
-      return Image.file(
-        File(localPath),
+      return SizedBox(
         height: 150,
         width: double.infinity,
-        fit: BoxFit.cover,
+        child: Image.file(File(localPath), fit: BoxFit.contain),
       );
     }
 
-    return Image.network(
-      networkUrl ?? '',
+    return SizedBox(
       height: 150,
       width: double.infinity,
-      fit: BoxFit.cover,
+      child: Image.network(networkUrl ?? '', fit: BoxFit.contain),
     );
   }
 }

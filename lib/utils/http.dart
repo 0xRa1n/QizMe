@@ -164,6 +164,44 @@ class ApiService {
     }
   }
 
+  static Future<dynamic> putMultipartRequest(
+    String endpoint, {
+    required Map<String, String> fields,
+    Map<String, String>? files,
+  }) async {
+    final url = Uri.parse('$resolvedBaseUrl/$endpoint');
+
+    try {
+      final request = http.MultipartRequest('PUT', url)
+        ..headers.addAll(_getDebugHostHeader(url))
+        ..fields.addAll(fields);
+
+      if (files != null) {
+        for (final entry in files.entries) {
+          final path = entry.value.trim();
+          if (path.isEmpty) continue;
+
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              entry.key,
+              path,
+              filename: path.split(RegExp(r'[\\/]')).last,
+              contentType: _inferImageMediaType(path),
+            ),
+          );
+        }
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return _processResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Upload failed: $e');
+    }
+  }
+
   // Generic POST request function
   static Future<dynamic> putRequest(
     String endpoint,

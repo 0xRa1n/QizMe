@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:qizme/services/card_service.dart';
+import 'dart:io';
 
 class EditFlashcardPage extends StatefulWidget {
   final bool darkMode;
@@ -22,8 +25,13 @@ class EditFlashcardPage extends StatefulWidget {
 class _EditFlashcardPageState extends State<EditFlashcardPage> {
   late TextEditingController _frontController;
   late TextEditingController _backController;
+  final ImagePicker _imagePicker = ImagePicker();
   bool _isFrontEmpty = false;
   bool _isBackEmpty = false;
+  String? _frontImagePath;
+  String? _backImagePath;
+  String? _existingQuestionImageUrl;
+  String? _existingAnswerImageUrl;
 
   @override
   void initState() {
@@ -33,6 +41,12 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
     );
     _backController = TextEditingController(
       text: widget.flashcard['answer'] ?? '',
+    );
+    _existingQuestionImageUrl = _normalizeImageUrl(
+      widget.flashcard['questionImage'],
+    );
+    _existingAnswerImageUrl = _normalizeImageUrl(
+      widget.flashcard['answerImage'],
     );
   }
 
@@ -69,6 +83,18 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
             textColor: textColor,
             hintColor: hintColor,
             isError: _isFrontEmpty,
+            selectedImagePath: _frontImagePath,
+            existingImageUrl: _frontImagePath == null
+                ? _existingQuestionImageUrl
+                : null,
+            onImageTap: () => _showImageSourceSheet(isFront: true),
+            hideTextFieldWhenImageSelected: true,
+            onRemoveImage: () {
+              setState(() {
+                _frontImagePath = null;
+                _existingQuestionImageUrl = null;
+              });
+            },
           ),
           const SizedBox(height: 16),
           _buildCardSide(
@@ -81,36 +107,97 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
             hintColor: hintColor,
             showCheckbox: true,
             isError: _isBackEmpty,
+            selectedImagePath: _backImagePath,
+            existingImageUrl: _backImagePath == null
+                ? _existingAnswerImageUrl
+                : null,
+            onImageTap: () => _showImageSourceSheet(isFront: false),
+            hideTextFieldWhenImageSelected: true,
+            onRemoveImage: () {
+              setState(() {
+                _backImagePath = null;
+                _existingAnswerImageUrl = null;
+              });
+            },
           ),
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: () async {
               setState(() {
-                _isFrontEmpty = _frontController.text.trim().isEmpty;
-                _isBackEmpty = _backController.text.trim().isEmpty;
+                _isFrontEmpty =
+                    _frontController.text.trim().isEmpty &&
+                    _frontImagePath == null &&
+                    _existingQuestionImageUrl == null;
+                _isBackEmpty =
+                    _backController.text.trim().isEmpty &&
+                    _backImagePath == null &&
+                    _existingAnswerImageUrl == null;
               });
 
               if (_isFrontEmpty || _isBackEmpty) {
                 return;
               }
 
-              // TODO: Implement actual API call to update the flashcard here
-              // You have access to both IDs like this:
               final flashcardId = widget.flashcard['_id'];
               final cardId = widget.cardId;
 
+              if (flashcardId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Missing flashcard id.')),
+                );
+                return;
+              }
+
               try {
+                final hasQuestionImageAfterEdit =
+                    (_frontImagePath != null && _frontImagePath!.isNotEmpty) ||
+                    (_frontImagePath == null &&
+                        _existingQuestionImageUrl != null &&
+                        _existingQuestionImageUrl!.isNotEmpty);
+                final hasAnswerImageAfterEdit =
+                    (_backImagePath != null && _backImagePath!.isNotEmpty) ||
+                    (_backImagePath == null &&
+                        _existingAnswerImageUrl != null &&
+                        _existingAnswerImageUrl!.isNotEmpty);
+
+                final questionToSend = hasQuestionImageAfterEdit
+                    ? null
+                    : (_frontController.text.trim().isEmpty
+                          ? null
+                          : _frontController.text);
+                final answerToSend = hasAnswerImageAfterEdit
+                    ? null
+                    : (_backController.text.trim().isEmpty
+                          ? null
+                          : _backController.text);
+
                 await CardService.updateFlashcard(
-                  flashcardID: flashcardId,
-                  front: _frontController.text,
-                  back: _backController.text,
+                  flashcardID: flashcardId.toString(),
+                  question: questionToSend,
+                  answer: answerToSend,
+                  questionImagePath: _frontImagePath,
+                  answerImagePath: _backImagePath,
                   cardID: cardId,
                 );
 
                 if (mounted) {
                   // Update the local flashcard map so the UI reflects changes immediately
-                  widget.flashcard['question'] = _frontController.text;
-                  widget.flashcard['answer'] = _backController.text;
+                  widget.flashcard['question'] = questionToSend ?? '';
+                  widget.flashcard['answer'] = answerToSend ?? '';
+                  if (_frontImagePath != null) {
+                    widget.flashcard['questionImagePath'] = _frontImagePath;
+                    widget.flashcard.remove('questionImage');
+                  } else if (_existingQuestionImageUrl == null) {
+                    widget.flashcard.remove('questionImage');
+                    widget.flashcard.remove('questionImagePath');
+                  }
+                  if (_backImagePath != null) {
+                    widget.flashcard['answerImagePath'] = _backImagePath;
+                    widget.flashcard.remove('answerImage');
+                  } else if (_existingAnswerImageUrl == null) {
+                    widget.flashcard.remove('answerImage');
+                    widget.flashcard.remove('answerImagePath');
+                  }
 
                   await showDialog(
                     context: context,
@@ -164,9 +251,19 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
     required Color textFieldColor,
     required Color textColor,
     required Color hintColor,
+    required VoidCallback onImageTap,
+    required VoidCallback onRemoveImage,
+    String? selectedImagePath,
+    String? existingImageUrl,
+    bool hideTextFieldWhenImageSelected = false,
     bool showCheckbox = false,
     bool isError = false,
   }) {
+    final hasImage =
+        (selectedImagePath != null && selectedImagePath.isNotEmpty) ||
+        (existingImageUrl != null && existingImageUrl.isNotEmpty);
+    final shouldHideTextField = hideTextFieldWhenImageSelected && hasImage;
+
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -210,30 +307,200 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
                 width: isError ? 1.5 : 1.0,
               ),
             ),
-            child: Stack(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: controller,
-                  maxLines: 4,
-                  style: TextStyle(color: textColor),
-                  cursorColor: textColor,
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    hintStyle: TextStyle(color: hintColor),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(12),
+                if (selectedImagePath != null &&
+                    selectedImagePath.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(selectedImagePath),
+                            width: double.infinity,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: InkWell(
+                            onTap: onRemoveImage,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(3),
+                              child: const Icon(
+                                Icons.close,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Icon(Icons.image_outlined, color: hintColor),
-                ),
+                  const SizedBox(height: 8),
+                ] else if (existingImageUrl != null &&
+                    existingImageUrl.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            existingImageUrl,
+                            width: double.infinity,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: InkWell(
+                            onTap: onRemoveImage,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(3),
+                              child: const Icon(
+                                Icons.close,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (!shouldHideTextField)
+                  Stack(
+                    children: [
+                      TextField(
+                        controller: controller,
+                        maxLines: 4,
+                        style: TextStyle(color: textColor),
+                        cursorColor: textColor,
+                        decoration: InputDecoration(
+                          hintText: hintText,
+                          hintStyle: TextStyle(color: hintColor),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            12,
+                            12,
+                            40,
+                            12,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: IconButton(
+                          icon: Icon(Icons.image_outlined, color: hintColor),
+                          onPressed: onImageTap,
+                          tooltip: 'Add image',
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      icon: Icon(Icons.image_outlined, color: hintColor),
+                      onPressed: onImageTap,
+                      tooltip: 'Change image',
+                    ),
+                  ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showImageSourceSheet({required bool isFront}) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    final pickedFile = await _imagePicker.pickImage(source: source);
+    if (pickedFile == null || !mounted) return;
+
+    setState(() {
+      if (isFront) {
+        _frontImagePath = pickedFile.path;
+      } else {
+        _backImagePath = pickedFile.path;
+      }
+    });
+  }
+
+  String? _asNonEmptyString(dynamic value) {
+    if (value is! String) return null;
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    return text;
+  }
+
+  String? _normalizeImageUrl(dynamic rawUrl) {
+    final url = _asNonEmptyString(rawUrl);
+    if (url == null) return null;
+
+    final isAndroidDebug =
+        kDebugMode &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroidDebug) return url;
+
+    return url
+        .replaceFirst(
+          RegExp(r'^http://localhost(?=[:/])', caseSensitive: false),
+          'http://10.0.2.2',
+        )
+        .replaceFirst(
+          RegExp(r'^https://localhost(?=[:/])', caseSensitive: false),
+          'https://10.0.2.2',
+        );
   }
 }

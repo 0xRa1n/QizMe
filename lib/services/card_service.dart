@@ -54,14 +54,39 @@ class CardService {
 
   static Future<Map<String, dynamic>> updateFlashcard({
     required String flashcardID,
-    required String front,
-    required String back,
+    String? question,
+    String? answer,
+    String? questionImagePath,
+    String? answerImagePath,
     required String cardID,
   }) async {
-    final responseBody = await ApiService.putRequest(
-      "api/card/$cardID/updateFlashcard",
-      {"FlashcardID": flashcardID, "front": front, "back": back},
-    );
+    final fields = <String, String>{"FlashcardID": flashcardID};
+
+    if (question != null && question.trim().isNotEmpty) {
+      fields["question"] = question.trim();
+    }
+    if (answer != null && answer.trim().isNotEmpty) {
+      fields["answer"] = answer.trim();
+    }
+
+    final hasQuestionImage =
+        questionImagePath != null && questionImagePath.trim().isNotEmpty;
+    final hasAnswerImage =
+        answerImagePath != null && answerImagePath.trim().isNotEmpty;
+
+    final responseBody = (hasQuestionImage || hasAnswerImage)
+        ? await ApiService.putMultipartRequest(
+            "api/card/$cardID/updateFlashcard",
+            fields: fields,
+            files: {
+              if (hasQuestionImage) "questionImage": questionImagePath!,
+              if (hasAnswerImage) "answerImage": answerImagePath!,
+            },
+          )
+        : await ApiService.putRequest(
+            "api/card/$cardID/updateFlashcard",
+            fields,
+          );
 
     return {"raw": responseBody};
   }
