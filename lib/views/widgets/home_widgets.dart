@@ -147,7 +147,12 @@ Widget buildCalendarGrid({required bool darkMode, required String userId}) {
 
       // If there's an error, you could show an error message
       if (snapshot.hasError) {
-        return const Center(child: Text('Could not load history'));
+        return Center(
+          child: Text(
+            'Could not load history',
+            style: TextStyle(color: darkMode ? Colors.white70 : Colors.black54),
+          ),
+        );
       }
 
       // Once data is loaded, parse the active dates
@@ -274,7 +279,12 @@ Widget buildCalendarSection({required bool darkMode}) {
             if (snapshot.hasError ||
                 !snapshot.hasData ||
                 snapshot.data == null) {
-              return const Text('Could not load user data.');
+              return Text(
+                'Could not load user data.',
+                style: TextStyle(
+                  color: darkMode ? Colors.white70 : Colors.black54,
+                ),
+              );
             }
 
             // Once you have the userId, build the calendar grid
@@ -300,7 +310,10 @@ Widget buildCreateSubjectCard({
       if (snapshot.connectionState == ConnectionState.waiting) {
         return const Center(child: CircularProgressIndicator());
       } else if (snapshot.hasError) {
-        return Text('Error fetching user data: ${snapshot.error}');
+        return Text(
+          'Error fetching user data: ${snapshot.error}',
+          style: TextStyle(color: darkMode ? Colors.white70 : Colors.black87),
+        );
       } else {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,7 +333,12 @@ Widget buildCreateSubjectCard({
                 if (cardSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (cardSnapshot.hasError) {
-                  return Text('Error loading subjects: ${cardSnapshot.error}');
+                  return Text(
+                    'Error loading subjects: ${cardSnapshot.error}',
+                    style: TextStyle(
+                      color: darkMode ? Colors.white70 : Colors.black87,
+                    ),
+                  );
                 } else {
                   final cards = cardSnapshot.data?['raw'] as List? ?? [];
                   if (cards.isEmpty) {
@@ -403,12 +421,16 @@ class SubjectProgressCard extends StatefulWidget {
   final Map<String, dynamic> subject;
   final bool darkMode;
   final VoidCallback onTap;
+  final VoidCallback? onEditCardSetName;
+  final VoidCallback? onDeleteCardSet;
 
   const SubjectProgressCard({
     super.key,
     required this.subject,
     required this.darkMode,
     required this.onTap,
+    this.onEditCardSetName,
+    this.onDeleteCardSet,
   });
 
   @override
@@ -471,6 +493,8 @@ class _SubjectProgressCardState extends State<SubjectProgressCard>
     final subjectName = widget.subject['title'] ?? 'No Title';
     final progress =
         (widget.subject['cardCompletionPercentage'] as num? ?? 0.0) / 100.0;
+    final hasLibraryMenu =
+        widget.onEditCardSetName != null && widget.onDeleteCardSet != null;
 
     return InkWell(
       onTap: widget.onTap,
@@ -498,25 +522,81 @@ class _SubjectProgressCardState extends State<SubjectProgressCard>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  subjectName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: widget.darkMode ? Colors.white : Colors.black,
+                Expanded(
+                  child: Text(
+                    subjectName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: widget.darkMode ? Colors.white : Colors.black,
+                    ),
                   ),
                 ),
-                Text(
-                  '${(progress * 100).toInt()}% Completed',
-                  style: TextStyle(
-                    fontSize: 14,
+                if (hasLibraryMenu)
+                  PopupMenuButton<String>(
                     color: widget.darkMode
-                        ? Colors.white.withOpacity(0.6)
-                        : Colors.black54,
+                        ? const Color(0xFF2A2A2A)
+                        : Colors.white,
+                    icon: Icon(
+                      Icons.more_horiz,
+                      color: widget.darkMode ? Colors.white : Colors.black,
+                    ),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        widget.onEditCardSetName?.call();
+                      } else if (value == 'delete') {
+                        widget.onDeleteCardSet?.call();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Text(
+                          'Edit',
+                          style: TextStyle(
+                            color: widget.darkMode
+                                ? Colors.white
+                                : Colors.black,
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Text(
+                          'Delete',
+                          style: TextStyle(
+                            color: widget.darkMode
+                                ? Colors.white
+                                : Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    '${(progress * 100).toInt()}% Completed',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: widget.darkMode
+                          ? Colors.white.withOpacity(0.6)
+                          : Colors.black54,
+                    ),
                   ),
-                ),
               ],
             ),
+            if (hasLibraryMenu) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${(progress * 100).toInt()}% Completed',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: widget.darkMode
+                      ? Colors.white.withOpacity(0.6)
+                      : Colors.black54,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             AnimatedBuilder(
               animation: _animation,

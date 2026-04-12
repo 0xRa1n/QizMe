@@ -11,6 +11,7 @@ import 'package:qizme/views/home/tabs/settings.dart';
 import 'package:qizme/repositories/auth_repository.dart';
 import 'package:qizme/views/screens/create_flashcard_page.dart';
 import 'package:qizme/views/screens/edit_flashcard_page.dart';
+import 'package:qizme/views/screens/edit_card_set_name_page.dart';
 import 'package:qizme/views/screens/subject_content_page.dart';
 import 'package:qizme/views/widgets/qizme_search_delegate.dart';
 
@@ -36,6 +37,7 @@ class _QizMeState extends State<QizMe> {
   Map<String, dynamic>? _editingCardSet;
   List<Map<String, dynamic>> _editingFlashcards = [];
   int _currentFlashcardIndex = 0;
+  int _libraryRefreshTick = 0;
   // --- THEME STATE ---
   // This is the initial value before preferences are loaded.
   bool _darkMode = false;
@@ -89,6 +91,8 @@ class _QizMeState extends State<QizMe> {
         _showEditAccount = false;
         _showSettings = false;
       }
+      _showEditCardSetName = false;
+      _editingCardSet = null;
     });
   }
 
@@ -174,6 +178,138 @@ class _QizMeState extends State<QizMe> {
     await _loadStreak();
   }
 
+  String? _extractCardSetId(Map<String, dynamic> card) {
+    const idKeys = ['_id', 'id', 'CardID', 'cardID'];
+    for (final key in idKeys) {
+      final value = card[key];
+      if (value == null) continue;
+      final id = value.toString().trim();
+      if (id.isNotEmpty) return id;
+    }
+    return null;
+  }
+
+  Future<void> _showInfoDialog({
+    required String title,
+    required String content,
+  }) async {
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _refreshLibrary() {
+    if (!mounted) return;
+    setState(() {
+      _libraryRefreshTick++;
+    });
+  }
+
+  Future<void> _handleUpdateCardSetName(String newName) async {
+    final card = _editingCardSet;
+    if (card == null) return;
+
+    final cardId = _extractCardSetId(card);
+    if (cardId == null) {
+      await _showInfoDialog(
+        title: 'Update failed',
+        content: 'Could not find card set id.',
+      );
+      _refreshLibrary();
+      return;
+    }
+
+    try {
+      await CardService.updateCard(cardID: cardId, newName: newName);
+
+      if (!mounted) return;
+      setState(() {
+        _editingCardSet!['title'] = newName;
+        _showEditCardSetName = false;
+        _editingCardSet = null;
+      });
+
+      await _showInfoDialog(
+        title: 'Success',
+        content: 'Card set name updated successfully.',
+      );
+    } catch (error) {
+      await _showInfoDialog(title: 'Update failed', content: error.toString());
+    } finally {
+      _refreshLibrary();
+    }
+  }
+
+  Future<void> _handleDeleteCardSet(Map<String, dynamic> card) async {
+    if (!mounted) return;
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Card Set'),
+        content: const Text('Are you sure you want to delete this card?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) {
+      return;
+    }
+
+    final cardId = _extractCardSetId(card);
+    if (cardId == null) {
+      await _showInfoDialog(
+        title: 'Delete failed',
+        content: 'Could not find card set id.',
+      );
+      _refreshLibrary();
+      return;
+    }
+
+    try {
+      await CardService.deleteCardSet(cardID: cardId);
+
+      if (mounted) {
+        setState(() {
+          if (_editingCardSet != null &&
+              _extractCardSetId(_editingCardSet!) == cardId) {
+            _showEditCardSetName = false;
+            _editingCardSet = null;
+          }
+        });
+      }
+
+      await _showInfoDialog(
+        title: 'Success',
+        content: 'Card set deleted successfully.',
+      );
+    } catch (error) {
+      await _showInfoDialog(title: 'Delete failed', content: error.toString());
+    } finally {
+      _refreshLibrary();
+    }
+  }
+
   Widget _buildHomePage() {
     return RefreshIndicator(
       onRefresh: _refreshUserData,
@@ -224,6 +360,7 @@ class _QizMeState extends State<QizMe> {
         ),
         Expanded(
           child: FutureBuilder<String?>(
+            key: ValueKey(_libraryRefreshTick),
             future: getEmailFromPreferences(),
             builder: (context, emailSnapshot) {
               if (emailSnapshot.connectionState == ConnectionState.waiting) {
@@ -232,8 +369,13 @@ class _QizMeState extends State<QizMe> {
               if (emailSnapshot.hasError ||
                   !emailSnapshot.hasData ||
                   emailSnapshot.data == null) {
-                return const Center(
-                  child: Text('Could not retrieve user data.'),
+                return Center(
+                  child: Text(
+                    'Could not retrieve user data.',
+                    style: TextStyle(
+                      color: _darkMode ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
                 );
               }
 
@@ -245,7 +387,14 @@ class _QizMeState extends State<QizMe> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (cardSnapshot.hasError) {
-                    return Center(child: Text('Error: ${cardSnapshot.error}'));
+                    return Center(
+                      child: Text(
+                        'Error: ${cardSnapshot.error}',
+                        style: TextStyle(
+                          color: _darkMode ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                    );
                   }
 
                   final cards = cardSnapshot.data?['raw'] as List? ?? [];
@@ -271,10 +420,13 @@ class _QizMeState extends State<QizMe> {
                                 width: 1.5,
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'No decks yet! Create a card?',
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: _darkMode ? Colors.white : Colors.black,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -329,6 +481,17 @@ class _QizMeState extends State<QizMe> {
                           subject: card,
                           darkMode: _darkMode,
                           onTap: () => _selectSubject(card),
+                          onEditCardSetName: () {
+                            setState(() {
+                              _editingCardSet = Map<String, dynamic>.from(card);
+                              _showEditCardSetName = true;
+                            });
+                          },
+                          onDeleteCardSet: () {
+                            _handleDeleteCardSet(
+                              Map<String, dynamic>.from(card),
+                            );
+                          },
                         ),
                       );
                     },
@@ -518,7 +681,29 @@ class _QizMeState extends State<QizMe> {
     ];
 
     Widget? body;
-    if (_flashcardToEdit != null && _selectedSubject != null) {
+    if (_showEditCardSetName && _editingCardSet != null) {
+      body = EditCardSetNamePage(
+        darkMode: _darkMode,
+        cardSet: _editingCardSet!,
+        onCancel: () {
+          setState(() {
+            _showEditCardSetName = false;
+            _editingCardSet = null;
+          });
+        },
+        onSave: (newName) {
+          final trimmedName = newName.trim();
+          if (trimmedName.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Card set name cannot be empty.')),
+            );
+            return;
+          }
+
+          _handleUpdateCardSetName(trimmedName);
+        },
+      );
+    } else if (_flashcardToEdit != null && _selectedSubject != null) {
       body = EditFlashcardPage(
         darkMode: _darkMode,
         flashcard: _flashcardToEdit!,
@@ -580,6 +765,24 @@ class _QizMeState extends State<QizMe> {
                   ),
                   const Text(
                     'Edit Flashcard',
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                ],
+              )
+            : (_showEditCardSetName)
+            ? Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        _showEditCardSetName = false;
+                        _editingCardSet = null;
+                      });
+                    },
+                  ),
+                  const Text(
+                    'Edit Card Set Name',
                     style: TextStyle(color: Colors.white, fontSize: 20),
                   ),
                 ],
@@ -709,6 +912,8 @@ class _QizMeState extends State<QizMe> {
               _selectedSubject = null;
               _showCreateFlashcard = false;
               _flashcardToEdit = null;
+              _showEditCardSetName = false;
+              _editingCardSet = null;
               currentPageIndex = index;
               if (index != 3) {
                 _showEditAccount = false;

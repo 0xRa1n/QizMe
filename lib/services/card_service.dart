@@ -91,6 +91,30 @@ class CardService {
     return {"raw": responseBody};
   }
 
+  static Future<Map<String, dynamic>> deleteCardSet({
+    required String cardID,
+  }) async {
+    final responseBody = await ApiService.deleteRequest("api/card/deleteCard", {
+      "CardID": cardID,
+    });
+
+    return {"raw": responseBody};
+  }
+
+  static Future<Map<String, dynamic>> updateCard({
+    required String cardID,
+    required String newName,
+  }) async {
+    final payload = {"CardID": cardID, "newInput": newName};
+
+    final responseBody = await ApiService.putRequest(
+      "api/card/$cardID/updateCard",
+      payload,
+    );
+
+    return {"raw": responseBody};
+  }
+
   static Future<Map<String, dynamic>> getCardSet({
     required String email,
   }) async {
