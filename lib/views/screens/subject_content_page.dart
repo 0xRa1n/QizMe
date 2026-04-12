@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:qizme/services/card_service.dart';
 import 'package:qizme/services/streak_service.dart';
+import 'package:qizme/utils/functions.dart';
 import 'package:qizme/views/screens/study_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -207,57 +208,57 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
     Map<String, dynamic> flashcard,
     int index,
   ) {
-    showDialog(
+    bool shouldDelete = false;
+    showCustomDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Flashcard'),
-        content: const Text('Are you sure you want to delete this flashcard?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final flashcardIndex = index;
-              final flashcardId = _extractFlashcardId(flashcard);
-              print(flashcardIndex);
-              print(
-                'card ID: ${widget.subject['_id']}, flashcard ID: $flashcardId',
+      title: 'Delete Flashcard',
+      content: 'Are you sure you want to delete this flashcard?',
+      actions: [
+        OutlinedButton(
+          onPressed: () {
+            shouldDelete = false;
+            Navigator.pop(context);
+          },
+          child: const Text('Cancel'),
+        ),
+        OutlinedButton(
+          onPressed: () async {
+            shouldDelete = true;
+            Navigator.pop(context);
+
+            final flashcardIndex = index;
+            final flashcardId = _extractFlashcardId(flashcard);
+            print(flashcardIndex);
+            print(
+              'card ID: ${widget.subject['_id']}, flashcard ID: $flashcardId',
+            );
+
+            if (flashcardId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Could not find flashcard id.')),
               );
+              return;
+            }
 
-              if (flashcardId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Could not find flashcard id.')),
-                );
-                Navigator.pop(context);
-                return;
-              }
-
-              try {
-                await CardService.deleteFlashcard(
-                  cardID: widget.subject['_id'],
-                  flashcardID: flashcardId,
-                );
-                setState(() {
-                  flashcards.removeAt(flashcardIndex);
-                  widget.subject['flashcards'] = List<dynamic>.from(flashcards);
-                });
-              } catch (e) {
-                // show a snackbar
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(e.toString())));
-              } finally {
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+            try {
+              await CardService.deleteFlashcard(
+                cardID: widget.subject['_id'],
+                flashcardID: flashcardId,
+              );
+              if (!shouldDelete) return;
+              setState(() {
+                flashcards.removeAt(flashcardIndex);
+                widget.subject['flashcards'] = List<dynamic>.from(flashcards);
+              });
+            } catch (e) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(e.toString())));
+            }
+          },
+          child: const Text('OK'),
+        ),
+      ],
     );
   }
 }

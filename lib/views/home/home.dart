@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:qizme/services/card_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qizme/main.dart';
+import 'package:qizme/utils/functions.dart';
 // Import home_widgets.dart with a prefix to avoid name collisions.
 import 'package:qizme/views/widgets/home_widgets.dart' as home_widgets;
 import 'package:qizme/views/widgets/menu_widgets.dart';
@@ -72,6 +74,8 @@ class _QizMeState extends State<QizMe> {
       _darkMode = _prefs?.getBool('darkMode') ?? false;
       _isLoading = false;
     });
+
+    setAppThemeMode(_darkMode);
   }
 
   // --- THEME TOGGLE FUNCTION ---
@@ -81,6 +85,7 @@ class _QizMeState extends State<QizMe> {
       _darkMode = newValue;
     });
     await _prefs?.setBool('darkMode', newValue);
+    setAppThemeMode(newValue);
   }
 
   // Method to allow child widgets to change the tab
@@ -194,19 +199,7 @@ class _QizMeState extends State<QizMe> {
     required String content,
   }) async {
     if (!mounted) return;
-    await showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+    await showCustomDialog(context: context, title: title, content: content);
   }
 
   void _refreshLibrary() {
@@ -254,25 +247,30 @@ class _QizMeState extends State<QizMe> {
   Future<void> _handleDeleteCardSet(Map<String, dynamic> card) async {
     if (!mounted) return;
 
-    final shouldDelete = await showDialog<bool>(
+    bool shouldDelete = false;
+    await showCustomDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Card Set'),
-        content: const Text('Are you sure you want to delete this card?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Yes'),
-          ),
-        ],
-      ),
+      title: 'Delete Card Set',
+      content: 'Are you sure you want to delete this card?',
+      actions: [
+        OutlinedButton(
+          onPressed: () {
+            shouldDelete = false;
+            Navigator.of(context).pop();
+          },
+          child: const Text('No'),
+        ),
+        OutlinedButton(
+          onPressed: () {
+            shouldDelete = true;
+            Navigator.of(context).pop();
+          },
+          child: const Text('Yes'),
+        ),
+      ],
     );
 
-    if (shouldDelete != true) {
+    if (!shouldDelete) {
       return;
     }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qizme/services/card_service.dart';
+import 'package:qizme/utils/functions.dart';
 import 'dart:io';
 
 class CreateFlashcardPage extends StatefulWidget {
@@ -144,20 +145,10 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
 
                           if (mounted) {
                             // notify the user by having a dialog
-                            showDialog(
+                            await showCustomDialog(
                               context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Success'),
-                                content: const Text(
-                                  'Flashcard added successfully',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('OK'),
-                                  ),
-                                ],
-                              ),
+                              title: 'Success',
+                              content: 'Flashcard added successfully',
                             );
 
                             setState(() {

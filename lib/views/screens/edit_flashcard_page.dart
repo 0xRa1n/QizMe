@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qizme/services/card_service.dart';
+import 'package:qizme/utils/functions.dart';
 import 'dart:io';
 
 class EditFlashcardPage extends StatefulWidget {
@@ -214,18 +215,10 @@ class _EditFlashcardPageState extends State<EditFlashcardPage> {
                     widget.flashcard.remove('answerImagePath');
                   }
 
-                  await showDialog(
+                  await showCustomDialog(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Success'),
-                      content: const Text('Flashcard edited successfully'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('OK'),
-                        ),
-                      ],
-                    ),
+                    title: 'Success',
+                    content: 'Flashcard edited successfully',
                   );
 
                   if (mounted) {
