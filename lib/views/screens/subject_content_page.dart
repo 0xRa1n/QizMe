@@ -29,6 +29,14 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
     flashcards = List.from(widget.subject['flashcards'] ?? []);
   }
 
+  @override
+  void didUpdateWidget(covariant SubjectContentPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.subject != widget.subject) {
+      flashcards = List.from(widget.subject['flashcards'] ?? []);
+    }
+  }
+
   Future<bool> getDarkMode() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('darkMode') ?? false;
@@ -214,7 +222,7 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
           TextButton(
             onPressed: () async {
               final flashcardIndex = index;
-              final flashcardId = flashcard['_id'];
+              final flashcardId = _extractFlashcardId(flashcard);
               print(flashcardIndex);
               print(
                 'card ID: ${widget.subject['_id']}, flashcard ID: $flashcardId',
@@ -224,6 +232,7 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Could not find flashcard id.')),
                 );
+                Navigator.pop(context);
                 return;
               }
 
@@ -234,6 +243,7 @@ class _SubjectContentPageState extends State<SubjectContentPage> {
                 );
                 setState(() {
                   flashcards.removeAt(flashcardIndex);
+                  widget.subject['flashcards'] = List<dynamic>.from(flashcards);
                 });
               } catch (e) {
                 // show a snackbar

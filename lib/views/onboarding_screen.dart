@@ -73,12 +73,13 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                             style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 6),
                           const Text(
                             "Put your memory to the ultimate test.",
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(fontSize: 16, color: Colors.black),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -128,6 +129,7 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                               style: TextStyle(
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                               maxLines: 1,
                             ),
@@ -135,7 +137,7 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                           const SizedBox(height: 6),
                           const Text(
                             "Put your brains to the test, check your knowledge and discover what you already know.",
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(fontSize: 16, color: Colors.black),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -184,12 +186,13 @@ class _OnboardingscreenState extends State<Onboardingscreen> {
                             style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 6),
                           const Text(
                             "When a card is created, you can track your progress inside the application.",
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(fontSize: 16, color: Colors.black),
                             textAlign: TextAlign.center,
                           ),
                         ],

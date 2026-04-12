@@ -23,11 +23,22 @@ class _AddCardSetState extends State<AddCardSet> {
   }
 
   final TextEditingController _cardSetNameController = TextEditingController();
+  bool _showCardSetNameError = false;
 
   // get the text
   String get cardSetName => _cardSetNameController.text;
 
   Future<void> _createCardSet() async {
+    final trimmedName = cardSetName.trim();
+
+    if (trimmedName.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _showCardSetNameError = true;
+      });
+      return;
+    }
+
     final email = await _loadEmail();
     if (email.isEmpty) {
       if (!mounted) return;
@@ -42,7 +53,7 @@ class _AddCardSetState extends State<AddCardSet> {
     try {
       final result = await CardService.createCardSet(
         email: email,
-        name: cardSetName,
+        name: trimmedName,
       );
       final jsonMap = result["raw"];
 
@@ -58,7 +69,10 @@ class _AddCardSetState extends State<AddCardSet> {
         );
 
         // Clear the text field after successful creation
-        _cardSetNameController.clear();
+        setState(() {
+          _showCardSetNameError = false;
+          _cardSetNameController.clear();
+        });
       }
     } on ApiException catch (apiError) {
       if (!mounted) {
@@ -137,12 +151,22 @@ class _AddCardSetState extends State<AddCardSet> {
                   const SizedBox(height: 8.0),
                   TextField(
                     controller: _cardSetNameController,
+                    onChanged: (value) {
+                      if (_showCardSetNameError && value.trim().isNotEmpty) {
+                        setState(() {
+                          _showCardSetNameError = false;
+                        });
+                      }
+                    },
                     style: TextStyle(
                       color: textColor,
                     ), // Set text color for input
                     decoration: InputDecoration(
                       hintText: 'Enter a card set name',
                       hintStyle: TextStyle(color: hintColor, fontSize: 14.0),
+                      errorText: _showCardSetNameError
+                          ? 'Please enter a card set name'
+                          : null,
                       filled: true,
                       fillColor: textFieldFillColor,
                       isDense: true,
@@ -156,11 +180,19 @@ class _AddCardSetState extends State<AddCardSet> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6.0),
-                        borderSide: BorderSide(color: borderColor),
+                        borderSide: BorderSide(
+                          color: _showCardSetNameError
+                              ? Colors.red
+                              : borderColor,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6.0),
-                        borderSide: const BorderSide(color: Colors.blue),
+                        borderSide: BorderSide(
+                          color: _showCardSetNameError
+                              ? Colors.red
+                              : Colors.blue,
+                        ),
                       ),
                     ),
                   ),

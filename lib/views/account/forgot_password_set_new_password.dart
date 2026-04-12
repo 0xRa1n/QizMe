@@ -123,7 +123,7 @@ class _ForgotPasswordSetNewPasswordState
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -142,6 +142,7 @@ class _ForgotPasswordSetNewPasswordState
                       fontFamily: "YoungSerif",
                       fontWeight: FontWeight.bold,
                       fontSize: 64.0,
+                      color: Colors.black,
                     ),
                   ),
                 ),
@@ -149,7 +150,7 @@ class _ForgotPasswordSetNewPasswordState
                 const Center(
                   child: Text(
                     "Forgot password",
-                    style: TextStyle(fontSize: 20.0),
+                    style: TextStyle(fontSize: 20.0, color: Colors.black),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -159,6 +160,7 @@ class _ForgotPasswordSetNewPasswordState
                     controller: _newPasswordController,
                     cursorColor: Colors.black,
                     obscureText: true,
+                    style: const TextStyle(color: Colors.black),
                     decoration: const InputDecoration(
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(
@@ -168,8 +170,14 @@ class _ForgotPasswordSetNewPasswordState
                       ),
                       floatingLabelStyle: TextStyle(color: Color(0xFF5D8A56)),
                       border: OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black54),
+                      ),
                       labelText: 'New password',
-                      labelStyle: TextStyle(fontSize: 18.0),
+                      labelStyle: TextStyle(
+                        fontSize: 18.0,
+                        color: Colors.black,
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -186,6 +194,7 @@ class _ForgotPasswordSetNewPasswordState
                     obscureText: true,
                     controller: _newPasswordReEnterController,
                     cursorColor: Colors.black,
+                    style: const TextStyle(color: Colors.black),
                     decoration: const InputDecoration(
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(
@@ -195,8 +204,14 @@ class _ForgotPasswordSetNewPasswordState
                       ),
                       floatingLabelStyle: TextStyle(color: Color(0xFF5D8A56)),
                       border: OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black54),
+                      ),
                       labelText: 'Re-Enter new password',
-                      labelStyle: TextStyle(fontSize: 18.0),
+                      labelStyle: TextStyle(
+                        fontSize: 18.0,
+                        color: Colors.black,
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {

@@ -75,6 +75,7 @@ class _SignupState extends State<Signup> {
                         fontFamily: "YoungSerif",
                         fontWeight: FontWeight.bold,
                         fontSize: 64.0,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -84,7 +85,7 @@ class _SignupState extends State<Signup> {
                         alignment: Alignment.centerLeft,
                         child: const Text(
                           "Sign up",
-                          style: TextStyle(fontSize: 24.0),
+                          style: TextStyle(fontSize: 24.0, color: Colors.black),
                         ),
                       ),
                     ),
@@ -94,6 +95,7 @@ class _SignupState extends State<Signup> {
                       child: TextFormField(
                         controller: _emailController,
                         cursorColor: Colors.black,
+                        style: const TextStyle(color: Colors.black),
                         decoration: const InputDecoration(
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(
@@ -105,8 +107,14 @@ class _SignupState extends State<Signup> {
                             color: Color(0xFF5D8A56),
                           ),
                           border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black54),
+                          ),
                           labelText: 'Email',
-                          labelStyle: TextStyle(fontSize: 18.0),
+                          labelStyle: TextStyle(
+                            fontSize: 18.0,
+                            color: Colors.black,
+                          ),
                         ),
                         validator: (value) {
                           if (!EmailValidator.validate(value ?? "")) {
@@ -123,6 +131,7 @@ class _SignupState extends State<Signup> {
                         controller: _passwordController,
                         cursorColor: Colors.black,
                         obscureText: true,
+                        style: const TextStyle(color: Colors.black),
                         decoration: const InputDecoration(
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(
@@ -134,8 +143,14 @@ class _SignupState extends State<Signup> {
                             color: Color(0xFF5D8A56),
                           ),
                           border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black54),
+                          ),
                           labelText: 'Password',
-                          labelStyle: TextStyle(fontSize: 18.0),
+                          labelStyle: TextStyle(
+                            fontSize: 18.0,
+                            color: Colors.black,
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

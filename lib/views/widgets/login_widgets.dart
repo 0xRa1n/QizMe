@@ -12,6 +12,7 @@ Widget createTextField({
     child: TextFormField(
       controller: controller,
       obscureText: obscure,
+      style: const TextStyle(color: Colors.black),
       cursorColor: Colors.black,
       decoration: InputDecoration(
         // The border when the field is selected
@@ -22,8 +23,11 @@ Widget createTextField({
         floatingLabelStyle: const TextStyle(color: Color(0xFF5D8A56)),
         // The default border
         border: const OutlineInputBorder(),
+        enabledBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.black54),
+        ),
         labelText: label,
-        labelStyle: const TextStyle(fontSize: 18.0),
+        labelStyle: const TextStyle(fontSize: 18.0, color: Colors.black),
       ),
       validator: validator,
     ),

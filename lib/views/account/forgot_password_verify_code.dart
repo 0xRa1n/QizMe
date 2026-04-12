@@ -106,7 +106,7 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPasswordVerifyCode> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -125,6 +125,7 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPasswordVerifyCode> {
                       fontFamily: "YoungSerif",
                       fontWeight: FontWeight.bold,
                       fontSize: 64.0,
+                      color: Colors.black,
                     ),
                   ),
                 ),
@@ -132,7 +133,7 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPasswordVerifyCode> {
                 const Center(
                   child: Text(
                     "Forgot password",
-                    style: TextStyle(fontSize: 20.0),
+                    style: TextStyle(fontSize: 20.0, color: Colors.black),
                   ),
                 ),
                 const Center(
@@ -158,6 +159,18 @@ class _ForgotPasswordVerifyCodeState extends State<ForgotPasswordVerifyCode> {
                       child: Pinput(
                         length: 4,
                         controller: _codeController,
+                        defaultPinTheme: PinTheme(
+                          width: 56,
+                          height: 56,
+                          textStyle: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.black,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black54),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onCompleted: (inputCode) =>
                             _code = int.tryParse(inputCode),
                         validator: (value) {

@@ -138,6 +138,38 @@ class _QizMeState extends State<QizMe> {
     });
   }
 
+  Future<void> _refreshSelectedSubjectFromServer() async {
+    final selected = _selectedSubject;
+    if (selected == null) return;
+
+    final email = await getEmailFromPreferences();
+    if (email == null) return;
+
+    try {
+      final response = await CardService.getCardSet(email: email);
+      final raw = response['raw'];
+      if (raw is! List) return;
+
+      final selectedId = selected['_id']?.toString();
+      if (selectedId == null || selectedId.isEmpty) return;
+
+      Map<String, dynamic>? updatedSubject;
+      for (final item in raw) {
+        if (item is Map<String, dynamic> &&
+            item['_id']?.toString() == selectedId) {
+          updatedSubject = item;
+          break;
+        }
+      }
+
+      if (updatedSubject != null && mounted) {
+        setState(() {
+          _selectedSubject = Map<String, dynamic>.from(updatedSubject!);
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _refreshUserData() async {
     await _loadStreak();
   }
@@ -495,27 +527,21 @@ class _QizMeState extends State<QizMe> {
           setState(() {
             _flashcardToEdit = null;
           });
+          _refreshSelectedSubjectFromServer();
         },
       );
     } else if (_showCreateFlashcard && _selectedSubject != null) {
       body = CreateFlashcardPage(
         darkMode: _darkMode,
         cardId: _selectedSubject!['_id'] as String,
-        onFlashcardAdded: (newCard) {
-          setState(() {
-            if (_selectedSubject != null) {
-              final flashcards = List<dynamic>.from(
-                _selectedSubject!['flashcards'] ?? [],
-              );
-              flashcards.add(newCard);
-              _selectedSubject!['flashcards'] = flashcards;
-            }
-          });
+        onFlashcardAdded: (_) {
+          _refreshSelectedSubjectFromServer();
         },
         onDone: () {
           setState(() {
             _showCreateFlashcard = false;
           });
+          _refreshSelectedSubjectFromServer();
         },
       ); // Placeholder for Create Flashcard view
     } else if (_selectedSubject != null) {

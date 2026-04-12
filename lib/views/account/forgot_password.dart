@@ -108,7 +108,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -127,6 +127,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                       fontFamily: "YoungSerif",
                       fontWeight: FontWeight.bold,
                       fontSize: 64.0,
+                      color: Colors.black,
                     ),
                   ),
                 ),
@@ -134,7 +135,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                 const Center(
                   child: Text(
                     "Forgot password",
-                    style: TextStyle(fontSize: 20.0),
+                    style: TextStyle(fontSize: 20.0, color: Colors.black),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -142,6 +143,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   width: 350,
                   child: TextFormField(
                     controller: _emailController,
+                    style: const TextStyle(color: Colors.black),
                     cursorColor: Colors.black,
                     decoration: const InputDecoration(
                       focusedBorder: OutlineInputBorder(
@@ -152,8 +154,14 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                       ),
                       floatingLabelStyle: TextStyle(color: Color(0xFF5D8A56)),
                       border: OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black54),
+                      ),
                       labelText: 'Email',
-                      labelStyle: TextStyle(fontSize: 18.0),
+                      labelStyle: TextStyle(
+                        fontSize: 18.0,
+                        color: Colors.black,
+                      ),
                     ),
                     validator: (value) {
                       if (value == null ||

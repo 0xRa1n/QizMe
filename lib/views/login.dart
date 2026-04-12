@@ -134,6 +134,7 @@ class _LoginState extends State<Login> {
                         fontFamily: "YoungSerif",
                         fontWeight: FontWeight.bold,
                         fontSize: 64.0,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -175,7 +176,7 @@ class _LoginState extends State<Login> {
                         ),
                         child: const Text(
                           "Forgot password",
-                          style: TextStyle(fontSize: 14),
+                          style: TextStyle(fontSize: 14, color: Colors.black),
                         ),
                       ),
                     ),
@@ -211,7 +212,10 @@ class _LoginState extends State<Login> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("Don't have an account?"),
+                        const Text(
+                          "Don't have an account?",
+                          style: TextStyle(color: Colors.black),
+                        ),
                         TextButton(
                           onPressed: () => Navigator.push(
                             context,

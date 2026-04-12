@@ -117,6 +117,7 @@ class _SignupAdditionalState extends State<SignupAdditional> {
                         fontFamily: "YoungSerif",
                         fontWeight: FontWeight.bold,
                         fontSize: 64.0,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -126,7 +127,7 @@ class _SignupAdditionalState extends State<SignupAdditional> {
                         alignment: Alignment.centerLeft,
                         child: const Text(
                           "We need more information",
-                          style: TextStyle(fontSize: 24.0),
+                          style: TextStyle(fontSize: 24.0, color: Colors.black),
                         ),
                       ),
                     ),
@@ -136,6 +137,7 @@ class _SignupAdditionalState extends State<SignupAdditional> {
                       child: TextFormField(
                         controller: _nameController,
                         cursorColor: Colors.black,
+                        style: const TextStyle(color: Colors.black),
                         decoration: const InputDecoration(
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(
@@ -147,8 +149,14 @@ class _SignupAdditionalState extends State<SignupAdditional> {
                             color: Color(0xFF5D8A56),
                           ),
                           border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black54),
+                          ),
                           labelText: 'Name',
-                          labelStyle: TextStyle(fontSize: 18.0),
+                          labelStyle: TextStyle(
+                            fontSize: 18.0,
+                            color: Colors.black,
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -164,6 +172,7 @@ class _SignupAdditionalState extends State<SignupAdditional> {
                       child: TextFormField(
                         controller: _usernameController,
                         cursorColor: Colors.black,
+                        style: const TextStyle(color: Colors.black),
                         decoration: const InputDecoration(
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(
@@ -175,8 +184,14 @@ class _SignupAdditionalState extends State<SignupAdditional> {
                             color: Color(0xFF5D8A56),
                           ),
                           border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black54),
+                          ),
                           labelText: 'Username',
-                          labelStyle: TextStyle(fontSize: 18.0),
+                          labelStyle: TextStyle(
+                            fontSize: 18.0,
+                            color: Colors.black,
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
