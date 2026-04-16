@@ -59,13 +59,13 @@ class AuthRepository {
 
   Future<bool> requestPasswordResetCode({required String email}) async {
     final result = await AuthService.requestPasswordResetCode(email: email);
-    final jsonMap = result;
+    final jsonMap = result['raw'];
     return jsonMap['success'];
   }
 
   Future<String> verifyPasswordResetCode({required int code}) async {
     final result = await AuthService.verifyPasswordResetCode(code: code);
-    final jsonMap = result;
+    final jsonMap = result['raw'] ?? {};
     final token = jsonMap['message']?['token'];
 
     if (token == null || token is! String || token.isEmpty) {
@@ -83,7 +83,7 @@ class AuthRepository {
       token: token,
       newPassword: newPassword,
     );
-    final jsonMap = result;
+    final jsonMap = result['raw'] ?? {};
 
     final success = jsonMap['success'] == true;
     if (!success) {
