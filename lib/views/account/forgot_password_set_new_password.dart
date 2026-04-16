@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qizme/repositories/auth_repository.dart';
 import 'package:qizme/utils/functions.dart';
 import 'package:qizme/utils/http.dart';
-import 'package:qizme/views/home/home.dart';
+import 'package:qizme/views/login.dart';
 
 class ForgotPasswordSetNewPassword extends StatefulWidget {
   final String token;
@@ -68,10 +68,9 @@ class _ForgotPasswordSetNewPasswordState
       }
 
       if (ok) {
-        // to-do: add a message if the password reset has been successful.
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const QizMe()),
+          MaterialPageRoute(builder: (context) => const Login()),
           (Route<dynamic> route) => false,
         );
       }
