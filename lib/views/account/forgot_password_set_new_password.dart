@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qizme/repositories/auth_repository.dart';
 import 'package:qizme/utils/functions.dart';
 import 'package:qizme/utils/http.dart';
+import 'package:qizme/views/home/home.dart';
 import 'package:qizme/views/login.dart';
 
 class ForgotPasswordSetNewPassword extends StatefulWidget {
@@ -68,6 +69,38 @@ class _ForgotPasswordSetNewPasswordState
       }
 
       if (ok) {
+        final resetEmail = await _authRepository.getPendingResetEmail();
+
+        if (resetEmail != null && resetEmail.isNotEmpty) {
+          try {
+            await _authRepository.login(
+              email: resetEmail,
+              password: _newPasswordReEnterController.text,
+            );
+
+            await _authRepository.clearPendingResetEmail();
+
+            if (!mounted) {
+              return;
+            }
+
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const QizMe()),
+              (Route<dynamic> route) => false,
+            );
+            return;
+          } catch (_) {
+            // If auto-login fails, fall back to the login screen.
+          }
+        }
+
+        await _authRepository.clearPendingResetEmail();
+
+        if (!mounted) {
+          return;
+        }
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const Login()),

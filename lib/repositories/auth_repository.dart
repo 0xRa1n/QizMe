@@ -60,7 +60,14 @@ class AuthRepository {
   Future<bool> requestPasswordResetCode({required String email}) async {
     final result = await AuthService.requestPasswordResetCode(email: email);
     final jsonMap = result['raw'];
-    return jsonMap['success'];
+    final success = jsonMap['success'] == true;
+
+    if (success) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('resetEmail', email.trim());
+    }
+
+    return success;
   }
 
   Future<String> verifyPasswordResetCode({required int code}) async {
@@ -95,6 +102,16 @@ class AuthRepository {
 
   Future<void> initializePreferences() async {
     await SharedPreferences.getInstance();
+  }
+
+  Future<String?> getPendingResetEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('resetEmail');
+  }
+
+  Future<void> clearPendingResetEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('resetEmail');
   }
 
   Future<void> updateUserPreferences({
