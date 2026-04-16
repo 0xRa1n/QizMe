@@ -24,6 +24,7 @@ class _EditDialogContent extends StatefulWidget {
 }
 
 class __EditDialogContentState extends State<_EditDialogContent> {
+  final _formKey = GlobalKey<FormState>();
   late final List<TextEditingController> _controllers;
 
   @override
@@ -47,19 +48,28 @@ class __EditDialogContentState extends State<_EditDialogContent> {
     return AlertDialog(
       title: Text(widget.title),
       content: SingleChildScrollView(
-        child: ListBody(
-          children: List.generate(widget.fieldLabels.length, (index) {
-            return Padding(
-              padding: EdgeInsets.only(top: index == 0 ? 0 : 16.0),
-              child: TextField(
-                controller: _controllers[index],
-                decoration: InputDecoration(
-                  labelText: widget.fieldLabels[index],
-                  border: const OutlineInputBorder(),
+        child: Form(
+          key: _formKey,
+          child: ListBody(
+            children: List.generate(widget.fieldLabels.length, (index) {
+              return Padding(
+                padding: EdgeInsets.only(top: index == 0 ? 0 : 16.0),
+                child: TextFormField(
+                  controller: _controllers[index],
+                  decoration: InputDecoration(
+                    labelText: widget.fieldLabels[index],
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return '${widget.fieldLabels[index]} is required';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-            );
-          }),
+              );
+            }),
+          ),
         ),
       ),
       actions: <Widget>[
@@ -72,8 +82,11 @@ class __EditDialogContentState extends State<_EditDialogContent> {
         ElevatedButton(
           child: const Text('Save'),
           onPressed: () {
+            if (!_formKey.currentState!.validate()) {
+              return;
+            }
             final values = _controllers
-                .map((controller) => controller.text)
+                .map((controller) => controller.text.trim())
                 .toList();
             widget.onSave(values);
             Navigator.of(context).pop();
